@@ -38,7 +38,7 @@ go build -o gitquest .
 | Task | Command |
 |---|---|
 | Run all tests | `go test -v ./...` |
-| Run tests with race detection | `go test -race ./internal/cli/ ./internal/gitx/` |
+| Run tests with race detection | `go test -race ./...` |
 | Generate test coverage | `go test -coverprofile=coverage.out ./... && go tool cover -func=coverage.out` |
 | Format codebase | `test -z "$(gofmt -l .)"` (or fix with `gofmt -w .`) |
 | Static analysis | `go vet ./...` |

@@ -10,7 +10,7 @@
 |---|---|---|
 | **Language** | Go (`go 1.26+`) | Standard library only; zero third-party dependencies |
 | **VCS Engine** | Git (>= 2.32) | Invoked via child process with sanitized environments |
-| **Packaging & Release** | GoReleaser v2 | Cross-compiled static binaries for Linux, macOS, and Windows (`amd64`/`arm64`) with `CGO_ENABLED=0` |
+| **Packaging & Release** | GoReleaser v2 | Cross-compiled static binaries for Linux and macOS (`amd64`/`arm64`) with `CGO_ENABLED=0` |
 | **CI/CD** | GitHub Actions | Multi-stage pipeline: Dependency validation, linting, matrix testing with coverage, and artifact builds |
 
 ---
@@ -73,7 +73,7 @@ To protect against accidental directory modification or deletion:
 ### 3.3 Deterministic Level Generation (`internal/levels` & `internal/gitx`)
 Levels are constructed from deterministic sequences of steps (`Write`, `Commit`, `Branch`, `Switch`, `ResetHard`, `Save`):
 - Git commits use a fixed baseline timestamp (`1767258000`, 2026-01-01 09:00:00 UTC), advancing by 60 seconds per commit.
-- `SetupEnv` clears all host `GIT_*` environment variables, sets `GIT_CONFIG_NOSYSTEM=1`, `GIT_CONFIG_GLOBAL=/dev/null`, and assigns narrator identity.
+- `SetupEnv` clears all host `GIT_*` environment variables, sets `GIT_CONFIG_NOSYSTEM=1`, `GIT_CONFIG_GLOBAL=os.DevNull`, and assigns narrator identity.
 - Local repository configuration forces predictable Git behavior: disables GPG signing, sets `core.autocrlf=false`, `merge.ff=true`, and sets `core.hooksPath` to an empty non-existent directory.
 - As a result, building any level across different machines yields identical commit hashes and trees.
 
