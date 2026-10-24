@@ -41,7 +41,7 @@ to build it. If the plan and the spec disagree, the spec wins.
 | Module path | `github.com/dpologdvinity/gitquest` |
 | Dependencies | none. Stdlib only. The game shells out to the user's `git` (≥ 2.32, needed for `GIT_CONFIG_GLOBAL`). |
 | Tests | stdlib `testing`, real `git` in temp dirs |
-| Release | GoReleaser v2, linux/darwin × amd64/arm64, `CGO_ENABLED=0` |
+| Release | GoReleaser v2, linux/darwin × amd64/arm64 archives, Linux `.deb` packages, checksum-verified curl installer, `CGO_ENABLED=0` |
 | CI | GitHub Actions: `actions/checkout@v7`, `actions/setup-go@v7`, `goreleaser/goreleaser-action@v7` with `version: "~> v2"` (latest tags on 2026-10-23: v7.0.1, v7.0.0, v7.3.0; GoReleaser v2.19.0) |
 | License | MIT, `Copyright (c) 2026 Kaitlyn Bassford` |
 

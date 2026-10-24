@@ -45,6 +45,8 @@ go build -o gitquest .
 | Linter suite | `golangci-lint run ./...` |
 | Validate release config | `goreleaser check` |
 | Test snapshot build | `goreleaser build --snapshot --clean` |
+| Test release packaging (including Debian packages) | `goreleaser release --snapshot --clean --skip=publish` |
+| Check curl installer | `shellcheck install.sh && go test ./scripts` |
 
 ---
 

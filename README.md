@@ -14,11 +14,38 @@ gitquest: learn git by escaping puzzle rooms
 
 You need Git 2.32 or newer.
 
-```sh
-# Via Homebrew (Linux and macOS)
-brew install dpologdvinity/tap/gitquest
+### curl (Linux and macOS)
 
-# Or install with Go
+```sh
+curl -fsSL https://github.com/dpologdvinity/gitquest/releases/latest/download/install.sh | sh
+export PATH="$HOME/.local/bin:$PATH"
+```
+
+The installer detects amd64 or arm64, verifies the archive's SHA-256 checksum, and installs to `~/.local/bin`. Set `GITQUEST_INSTALL_DIR` to choose another writable directory or `GITQUEST_VERSION` to pin a release. Failed downloads or verification leave an existing installation intact.
+
+### APT (Debian and Ubuntu)
+
+Download the package for your architecture, verify its checksum, then install it with APT:
+
+```sh
+gitquest_arch=$(dpkg --print-architecture)
+curl -fLO "https://github.com/dpologdvinity/gitquest/releases/latest/download/gitquest_linux_${gitquest_arch}.deb"
+curl -fLO https://github.com/dpologdvinity/gitquest/releases/latest/download/checksums.txt
+sha256sum --ignore-missing --check checksums.txt
+sudo apt install "./gitquest_linux_${gitquest_arch}.deb"
+```
+
+Packages support amd64 and arm64. APT installs the required Git dependency. To update, download and install the latest `.deb`; to uninstall, run `sudo apt remove gitquest`.
+
+### Homebrew (Linux and macOS)
+
+```sh
+brew install dpologdvinity/tap/gitquest
+```
+
+### Go
+
+```sh
 go install github.com/dpologdvinity/gitquest@latest
 ```
 
@@ -28,7 +55,7 @@ Tagged releases provide pre-compiled archives for Linux and macOS (amd64 and arm
 
 Run `gitquest start`, change into the level folder it prints, solve the puzzle with normal `git` commands, then run `gitquest check`. Use `gitquest hint` for up to three progressive hints. `gitquest status` lists all rooms, `gitquest level N` opens any room, and `gitquest reset [N]` rebuilds a room from scratch.
 
-Release `v0.1.0` uses `main` for puzzle branches. This walkthrough follows current source on `master`; install it with `go install github.com/dpologdvinity/gitquest@master` to use `master` in the examples.
+Releases starting with `v0.1.1` use `master` for puzzle branches. Existing levels created on `main` by `v0.1.0` remain supported.
 
 Here is a level 1 session:
 
