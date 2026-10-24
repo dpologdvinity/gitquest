@@ -1,9 +1,11 @@
 package cli
 
 import (
+	"fmt"
 	"github.com/dpologdvinity/gitquest/internal/game"
 	"github.com/dpologdvinity/gitquest/internal/levels"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"reflect"
 	"strings"
@@ -74,5 +76,100 @@ func TestStatus(t *testing.T) {
 	want := []string{"gitquest · 2/12 solved", "", "✓  1 The Empty Logbook", "✓  2 A Fork in the Path", "▶  3 Catching Up  (2 hints used)", "   4 Two Captains  (1 hint used)", "   5 Typo in the Telegram"}
 	if len(lines) != 15 || !reflect.DeepEqual(lines[:7], want) {
 		t.Fatalf("%q", lines)
+	}
+}
+func playerSh(t *testing.T, dir, script string) {
+	t.Helper()
+	home := t.TempDir()
+	config := filepath.Join(t.TempDir(), "empty")
+	os.WriteFile(config, nil, 0600)
+	cmd := exec.Command("sh", "-c", script)
+	cmd.Dir = dir
+	cmd.Env = append(os.Environ(), "HOME="+home, "GIT_CONFIG_GLOBAL="+config, "GIT_CONFIG_NOSYSTEM=1", "GIT_EDITOR=true")
+	if b, e := cmd.CombinedOutput(); e != nil {
+		t.Fatalf("%s: %s", e, b)
+	}
+}
+func TestCheckFailThenPass(t *testing.T) {
+	d, home, out, errb := testDeps(t)
+	if Run([]string{"check"}, d) != 1 || errb.String() != "gitquest: no level in progress; run gitquest start\n" {
+		t.Fatal(errb)
+	}
+	Run([]string{"start"}, d)
+	out.Reset()
+	if Run([]string{"check"}, d) != 1 || out.String() != "✗ Not solved yet: there are no commits yet\nStuck? Try gitquest hint\n" {
+		t.Fatal(out)
+	}
+	dir := filepath.Join(home, "gq", "level-01")
+	playerSh(t, dir, `git add logbook.txt && git commit -q -m "First entry"`)
+	out.Reset()
+	if Run([]string{"check"}, d) != 0 || out.String() != "✓ Level 1 solved: The Empty Logbook\nNext: gitquest level 2\n" {
+		t.Fatal(out)
+	}
+}
+func TestCheckUsesCwdLevel(t *testing.T) {
+	d, home, out, _ := testDeps(t)
+	Run([]string{"level", "2"}, d)
+	Run([]string{"level", "1"}, d)
+	dir := filepath.Join(home, "gq", "level-02")
+	playerSh(t, dir, `git switch -q -c explore`)
+	d.Getwd = func() (string, error) { return dir, nil }
+	out.Reset()
+	if Run([]string{"check"}, d) != 0 || !strings.HasPrefix(out.String(), "✓ Level 2 solved") {
+		t.Fatal(out)
+	}
+}
+func TestHints(t *testing.T) {
+	d, _, out, _ := testDeps(t)
+	Run([]string{"level", "8"}, d)
+	l, _ := levels.ByN(8)
+	for i := 0; i < 3; i++ {
+		out.Reset()
+		Run([]string{"hint"}, d)
+		if out.String() != fmt.Sprintf("Hint %d/3: %s\n", i+1, l.Hints[i]) {
+			t.Fatal(out)
+		}
+	}
+	out.Reset()
+	Run([]string{"hint"}, d)
+	want := fmt.Sprintf("Hint 1/3: %s\nHint 2/3: %s\nHint 3/3: %s\nThat's every hint. You've got this!\n", l.Hints[0], l.Hints[1], l.Hints[2])
+	if out.String() != want {
+		t.Fatal(out)
+	}
+}
+func TestResetRebuilds(t *testing.T) {
+	d, home, out, _ := testDeps(t)
+	Run([]string{"level", "6"}, d)
+	dir := filepath.Join(home, "gq", "level-06")
+	playerSh(t, dir, `git reset -q --hard HEAD~2`)
+	out.Reset()
+	if Run([]string{"reset"}, d) != 0 || !strings.HasPrefix(out.String(), "Level 6 rebuilt.\n\nLevel 6/12 · Undo the Spell\n") {
+		t.Fatal(out)
+	}
+	out.Reset()
+	if Run([]string{"check"}, d) != 1 || !strings.Contains(out.String(), "nothing has been undone yet") {
+		t.Fatal(out)
+	}
+}
+func TestResetRefusesUnmarked(t *testing.T) {
+	d, home, _, errb := testDeps(t)
+	Run([]string{"level", "4"}, d)
+	dir := filepath.Join(home, "gq", "level-04")
+	os.Remove(filepath.Join(dir, ".gitquest-level"))
+	if Run([]string{"reset", "4"}, d) != 1 || errb.String() != "gitquest: refusing to touch "+dir+": it has no .gitquest-level marker; move or delete it yourself\n" {
+		t.Fatal(errb)
+	}
+	if _, e := os.Stat(filepath.Join(dir, ".git")); e != nil {
+		t.Fatal("deleted unmarked dir")
+	}
+}
+func TestLastLevelMessage(t *testing.T) {
+	d, home, out, _ := testDeps(t)
+	Run([]string{"level", "12"}, d)
+	playerSh(t, filepath.Join(home, "gq", "level-12"), `printf '*.log\ncache/\nsecrets.env\n' > .gitignore && git add .gitignore notes.md && git commit -q -m x`)
+	out.Reset()
+	Run([]string{"check"}, d)
+	if out.String() != "✓ Level 12 solved: Secrets in the Attic\nThat was the last level. You escaped gitquest!\n" {
+		t.Fatal(out)
 	}
 }

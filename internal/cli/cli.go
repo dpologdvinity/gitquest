@@ -52,7 +52,7 @@ func Run(args []string, d Deps) int {
 	}
 	if len(args) > 0 {
 		switch args[0] {
-		case "start", "level", "status":
+		case "start", "level", "status", "check", "hint", "reset":
 			return runGame(args, d)
 		}
 	}
@@ -84,11 +84,14 @@ func runGame(args []string, d Deps) int {
 	if cmd == "level" && len(args) != 2 {
 		return fail(d, errors.New("level must be a number from 1 to 12"), 2)
 	}
-	if cmd != "level" && len(args) != 1 {
+	if cmd == "reset" && len(args) > 2 {
+		return fail(d, errors.New("level must be a number from 1 to 12"), 2)
+	}
+	if cmd != "level" && cmd != "reset" && len(args) != 1 {
 		return fail(d, fmt.Errorf("unknown command %q (see gitquest --help)", cmd), 2)
 	}
 	n := 0
-	if cmd == "level" {
+	if cmd == "level" || cmd == "reset" && len(args) == 2 {
 		var err error
 		n, err = parseLevel(args[1])
 		if err != nil {
@@ -134,6 +137,19 @@ func runGame(args []string, d Deps) int {
 		}
 		return 0
 	}
+
+	if cmd == "check" || cmd == "hint" || cmd == "reset" {
+		root, e := game.Root(d.Getenv)
+		if e != nil {
+			code := 1
+			if errors.Is(e, game.ErrRootRelative) {
+				code = 2
+			}
+			return fail(d, e, code)
+		}
+		return runAction(cmd, n, root, stateDir, p, d)
+	}
+
 	if cmd == "start" {
 		for _, l := range levels.All() {
 			if p.Level(l.N).SolvedAt.IsZero() {
@@ -188,5 +204,80 @@ func runGame(args []string, d Deps) int {
 		return fail(d, err, 1)
 	}
 	fmt.Fprint(d.Stdout, readyText(l, game.DisplayPath(dir, d.Getenv("HOME")), existed))
+	return 0
+}
+
+func runAction(cmd string, n int, root, stateDir string, p *game.Progress, d Deps) int {
+	if n == 0 {
+		cwd, e := d.Getwd()
+		if e == nil {
+			n = game.CurrentLevel(root, cwd, p)
+		} else {
+			n = p.Current
+		}
+	}
+	if n == 0 {
+		return fail(d, errors.New("no level in progress; run gitquest start"), 1)
+	}
+	l, _ := levels.ByN(n)
+	if cmd == "hint" {
+		state := p.Level(n)
+		if state.Hints < 3 {
+			state.Hints++
+			if e := game.SaveProgress(stateDir, p); e != nil {
+				return fail(d, e, 1)
+			}
+			fmt.Fprintf(d.Stdout, "Hint %d/3: %s\n", state.Hints, l.Hints[state.Hints-1])
+			return 0
+		}
+		for i, h := range l.Hints {
+			fmt.Fprintf(d.Stdout, "Hint %d/3: %s\n", i+1, h)
+		}
+		fmt.Fprintln(d.Stdout, "That's every hint. You've got this!")
+		return 0
+	}
+	if e := gitx.VersionOK(); e != nil {
+		return fail(d, e, 1)
+	}
+	if cmd == "check" {
+		ok, reason, e := game.Check(root, l)
+		if e != nil {
+			return fail(d, e, 1)
+		}
+		if !ok {
+			fmt.Fprintf(d.Stdout, "✗ Not solved yet: %s\nStuck? Try gitquest hint\n", reason)
+			return 1
+		}
+		state := p.Level(n)
+		if state.SolvedAt.IsZero() {
+			state.SolvedAt = d.Now()
+		}
+		p.Current = n
+		if e := game.SaveProgress(stateDir, p); e != nil {
+			return fail(d, e, 1)
+		}
+		fmt.Fprintf(d.Stdout, "✓ Level %d solved: %s\n", n, l.Title)
+		if n == 12 {
+			fmt.Fprintln(d.Stdout, "That was the last level. You escaped gitquest!")
+		} else {
+			fmt.Fprintf(d.Stdout, "Next: gitquest level %d\n", n+1)
+		}
+		return 0
+	}
+	if e := game.EnsureRoot(root); e != nil {
+		return fail(d, e, 1)
+	}
+	if e := game.SafeRemove(root, n); e != nil {
+		return fail(d, e, 1)
+	}
+	dir, e := game.Build(root, l)
+	if e != nil {
+		return fail(d, e, 1)
+	}
+	p.Current = n
+	if e = game.SaveProgress(stateDir, p); e != nil {
+		return fail(d, e, 1)
+	}
+	fmt.Fprintf(d.Stdout, "Level %d rebuilt.\n\n%s", n, readyText(l, game.DisplayPath(dir, d.Getenv("HOME")), false))
 	return 0
 }
