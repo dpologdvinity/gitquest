@@ -4,8 +4,8 @@ import "fmt"
 
 func init() {
 	registry = append(registry, Level{N: 5, Title: "Typo in the Telegram", Story: "You just sent a telegram to HQ, but the commit message has a typo. Nobody has seen it yet, so you can fix it in place.", Goal: `Change the last commit's message to exactly "Send telegram" without adding a new commit.`, Hints: [3]string{"You can rewrite the most recent commit as long as nobody else has it yet.", "git commit --amend replaces the last commit with a new one.", `git commit --amend -m "Send telegram"`}, Setup: []Step{W("header.txt", "TO: HQ\n"), C("Add the header"), Sv("base", "HEAD"), W("telegram.txt", "ARRIVING TUESDAY STOP\n"), C("Send telgram"), Sv("typo", "HEAD")}, Check: func(c *Ctx) (bool, string) {
-		if !c.OnMain() {
-			return false, "switch back to main first"
+		if !c.OnMaster() {
+			return false, "switch back to " + c.PrimaryBranch() + " first"
 		}
 		if c.Rev("HEAD") == c.Ref("typo") {
 			return false, `the last commit still says "Send telgram"`

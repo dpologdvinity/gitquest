@@ -139,5 +139,26 @@ func (c *Ctx) File(path string) (string, bool) {
 	b, e := os.ReadFile(filepath.Join(c.Dir, path))
 	return string(b), e == nil
 }
-func (c *Ctx) Ref(key string) string { return c.Refs[key] }
-func (c *Ctx) OnMain() bool          { return c.Head() == "refs/heads/main" }
+func (c *Ctx) Ref(key string) string {
+	if key == "master" || key == "main" {
+		if ref := c.Refs[c.PrimaryBranch()]; ref != "" {
+			return ref
+		}
+		other := "master"
+		if c.PrimaryBranch() == "master" {
+			other = "main"
+		}
+		return c.Refs[other]
+	}
+	return c.Refs[key]
+}
+func (c *Ctx) PrimaryBranch() string {
+	if c.ok("show-ref", "--verify", "--quiet", "refs/heads/master") {
+		return "master"
+	}
+	if c.ok("show-ref", "--verify", "--quiet", "refs/heads/main") || c.Head() == "refs/heads/main" {
+		return "main"
+	}
+	return "master"
+}
+func (c *Ctx) OnMaster() bool { return c.Head() == "refs/heads/"+c.PrimaryBranch() }

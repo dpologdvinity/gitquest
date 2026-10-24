@@ -9,7 +9,7 @@ import (
 )
 
 func init() {
-	plays = append(plays, play{n: 7, fresh: "hotfix has no new commit yet", solve: `git stash -q && git switch -q hotfix && echo fixed > bridge.txt && git add bridge.txt && git commit -q -m "Fix the bridge" && git switch -q main && git stash pop -q`, wrong: `git stash -q && git switch -q hotfix && echo fixed > bridge.txt && git add bridge.txt && git commit -q -m "Fix the bridge" && git switch -q main`, wrongReason: "your plan B draft is not back in notes.txt yet"})
+	plays = append(plays, play{n: 7, fresh: "hotfix has no new commit yet", solve: `git stash -q && git switch -q hotfix && echo fixed > bridge.txt && git add bridge.txt && git commit -q -m "Fix the bridge" && git switch -q master && git stash pop -q`, wrong: `git stash -q && git switch -q hotfix && echo fixed > bridge.txt && git add bridge.txt && git commit -q -m "Fix the bridge" && git switch -q master`, wrongReason: "your plan B draft is not back in notes.txt yet"})
 }
 func TestHotfixNeedsStash(t *testing.T) {
 	t.Setenv("HOME", t.TempDir())

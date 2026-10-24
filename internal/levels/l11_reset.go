@@ -7,8 +7,8 @@ func init() {
 		if s, ok := c.File("ch1.txt"); !ok || s != "Chapter 1\nedit: keep me\n" {
 			return false, "your uncommitted edit to ch1.txt is gone (git reset --hard throws working changes away); run gitquest reset and try --soft"
 		}
-		if !c.OnMain() {
-			return false, "switch back to main first"
+		if !c.OnMaster() {
+			return false, "switch back to " + c.PrimaryBranch() + " first"
 		}
 		p := c.Parents("HEAD")
 		if len(p) != 1 || p[0] != c.Ref("ch1") {

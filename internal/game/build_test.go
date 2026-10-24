@@ -9,11 +9,11 @@ import (
 	"testing"
 )
 
-var demo = levels.Level{N: 9, Title: "Demo", Setup: []levels.Step{levels.W("a.txt", "a\n"), levels.C("First"), levels.B("side"), levels.S("side"), levels.W("dir/b.txt", "b\n"), levels.C("Second"), levels.Sv("side", "HEAD"), levels.S("main"), levels.RH("main")}, Check: func(c *levels.Ctx) (bool, string) {
+var demo = levels.Level{N: 9, Title: "Demo", Setup: []levels.Step{levels.W("a.txt", "a\n"), levels.C("First"), levels.B("side"), levels.S("side"), levels.W("dir/b.txt", "b\n"), levels.C("Second"), levels.Sv("side", "HEAD"), levels.S("master"), levels.RH("master")}, Check: func(c *levels.Ctx) (bool, string) {
 	if c.Rev("side") != c.Ref("side") {
 		return false, "side moved"
 	}
-	return c.Has("side", "dir/b.txt") && !c.Has("main", "dir/b.txt") && c.OnMain(), "files"
+	return c.Has("side", "dir/b.txt") && !c.Has("master", "dir/b.txt") && c.OnMaster(), "files"
 }}
 
 func TestBuildDeterministicAndIsolated(t *testing.T) {
@@ -67,5 +67,48 @@ func TestCheckMissingLevel(t *testing.T) {
 	EnsureRoot(root)
 	if _, _, e := Check(root, demo); e == nil || e.Error() != "level 9 is not set up; run gitquest level 9" {
 		t.Fatal(e)
+	}
+}
+
+func TestLegacyMainLevelStillChecks(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	l, _ := levels.ByN(1)
+	root := filepath.Join(t.TempDir(), "gq")
+	dir, err := Build(root, l)
+	if err != nil {
+		t.Fatal(err)
+	}
+	g := gitx.Git{Dir: dir, Env: gitx.CheckEnv()}
+	if _, err = g.Run("branch", "-m", "master", "main"); err != nil {
+		t.Fatal(err)
+	}
+	if _, err = g.Run("add", "logbook.txt"); err != nil {
+		t.Fatal(err)
+	}
+	if _, err = g.Run("commit", "-q", "-m", "First entry"); err != nil {
+		t.Fatal(err)
+	}
+	if ok, reason, err := Check(root, l); err != nil || !ok {
+		t.Fatalf("legacy level: %v %v", reason, err)
+	}
+}
+
+func TestLegacyMainBranchUsesSavedMasterRef(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	l, _ := levels.ByN(9)
+	root := filepath.Join(t.TempDir(), "gq")
+	dir, err := Build(root, l)
+	if err != nil {
+		t.Fatal(err)
+	}
+	g := gitx.Git{Dir: dir, Env: gitx.CheckEnv()}
+	if _, err = g.Run("branch", "-m", "master", "main"); err != nil {
+		t.Fatal(err)
+	}
+	if _, err = g.Run("cherry-pick", "experiments~1"); err != nil {
+		t.Fatal(err)
+	}
+	if ok, reason, err := Check(root, l); err != nil || !ok {
+		t.Fatalf("legacy level: %v %v", reason, err)
 	}
 }

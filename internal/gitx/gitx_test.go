@@ -25,10 +25,10 @@ func TestEnvsDropUserGitVars(t *testing.T) {
 func TestRunAndOk(t *testing.T) {
 	t.Setenv("HOME", t.TempDir())
 	g := Git{Dir: t.TempDir(), Env: SetupEnv(SetupEpoch)}
-	if _, e := g.Run("init", "-q", "-b", "main"); e != nil {
+	if _, e := g.Run("init", "-q", "-b", "master"); e != nil {
 		t.Fatal(e)
 	}
-	if out, _ := g.Run("symbolic-ref", "HEAD"); out != "refs/heads/main\n" {
+	if out, _ := g.Run("symbolic-ref", "HEAD"); out != "refs/heads/master\n" {
 		t.Fatalf("%q", out)
 	}
 	if ok, e := g.Ok("rev-parse", "-q", "--verify", "HEAD"); ok || e != nil {

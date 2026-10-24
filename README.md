@@ -29,7 +29,7 @@ Level 1/12 · The Empty Logbook
 
 You are the new keeper of the gitquest lighthouse. The old keeper left a logbook on the desk, but nothing in it was ever saved.
 
-Goal: Save logbook.txt in a commit on the main branch.
+Goal: Save logbook.txt in a commit on the master branch.
 
 Your level is ready:
   cd ~/gitquest/level-01
@@ -75,6 +75,8 @@ For comprehensive architectural design and technical details, see [ARCHITECTURE.
 ## Safety and locations
 
 Level repositories live under `~/gitquest` by default. Set `GITQUEST_ROOT` to an absolute path to put them elsewhere. Gitquest marks its root with `.gitquest-root` and every level with `.gitquest-level`. It refuses to use an existing nonempty folder without the root marker or reset a level without its matching marker. `gitquest reset` deletes and rebuilds a marked level, including any work you made there.
+
+New level repositories start on `master`. Existing marked levels created before this change continue to work on `main`; rename that branch with `git branch -m main master` to use the updated hints.
 
 Progress is stored in `$GITQUEST_HOME/progress.json` when `GITQUEST_HOME` is set, otherwise under `$XDG_STATE_HOME/gitquest` or `~/.local/state/gitquest`.
 

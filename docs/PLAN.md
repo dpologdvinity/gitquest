@@ -129,8 +129,8 @@ func TestEnvsDropUserGitVars(t *testing.T) {
 func TestRunAndOk(t *testing.T) {
     t.Setenv("HOME", t.TempDir())
     g := Git{Dir: t.TempDir(), Env: SetupEnv(SetupEpoch)}
-    if _, err := g.Run("init", "-q", "-b", "main"); err != nil { t.Fatal(err) }
-    if out, _ := g.Run("symbolic-ref", "HEAD"); out != "refs/heads/main\n" { t.Fatalf("%q", out) }
+    if _, err := g.Run("init", "-q", "-b", "master"); err != nil { t.Fatal(err) }
+    if out, _ := g.Run("symbolic-ref", "HEAD"); out != "refs/heads/master\n" { t.Fatalf("%q", out) }
     if ok, err := g.Ok("rev-parse", "-q", "--verify", "HEAD"); ok || err != nil { t.Fatal(ok, err) }
     if _, err := g.Run("no-such-command"); err == nil { t.Fatal("want error") }
 }
@@ -351,7 +351,8 @@ git commit -m "feat(game): save progress and resolve the current level"
   func ApplySteps(dir string, steps []Step) (refs map[string]string, err error) // SPEC §6.2 clock and table
   type Ctx struct { Dir string; Refs map[string]string }
   // methods exactly as SPEC §6.3: Head, Rev, Has, Blob, Parents, Message, Tree, Count, IsAncestor, Ignored, Merging, File, Ref
-  func (c *Ctx) OnMain() bool  // Head() == "refs/heads/main"
+  func (c *Ctx) OnMaster() bool  // Head() == "refs/heads/master"
+  func (c *Ctx) PrimaryBranch() string // keeps marked legacy levels on main checkable
   func All() []Level           // sorted by N; levels register via a package-level slice
   func ByN(n int) (Level, bool)
 
@@ -376,10 +377,10 @@ git commit -m "feat(game): save progress and resolve the current level"
 ```go
 var demo = levels.Level{N: 9, Title: "Demo", Setup: []levels.Step{
     levels.W("a.txt", "a\n"), levels.C("First"), levels.B("side"), levels.S("side"),
-    levels.W("dir/b.txt", "b\n"), levels.C("Second"), levels.Sv("side", "HEAD"), levels.S("main"), levels.RH("main"),
+    levels.W("dir/b.txt", "b\n"), levels.C("Second"), levels.Sv("side", "HEAD"), levels.S("master"), levels.RH("master"),
 }, Check: func(c *levels.Ctx) (bool, string) {
     if c.Rev("side") != c.Ref("side") { return false, "side moved" }
-    return c.Has("side", "dir/b.txt") && !c.Has("main", "dir/b.txt") && c.OnMain(), "files"
+    return c.Has("side", "dir/b.txt") && !c.Has("master", "dir/b.txt") && c.OnMaster(), "files"
 }}
 
 func TestBuildDeterministicAndIsolated(t *testing.T) {
@@ -451,7 +452,7 @@ Steps per task:
 
 - [ ] **Step 1: Write the failing tests** — add the `play` rows listed for the task (exact strings below).
 - [ ] **Step 2: Run them to verify they fail** — Run: `go test ./internal/game/ -run 'TestLevels'` — Expected: FAIL (`level N not registered` from a `ByN` lookup in the harness, which calls `t.Fatalf("level %d not registered", n)`).
-- [ ] **Step 3: Implement each level** exactly as SPEC §8: setup steps in order, check conditions in order with their exact reasons (the "on main" condition uses `c.OnMain()` with reason `switch back to main first`), hints verbatim.
+- [ ] **Step 3: Implement each level** exactly as SPEC §8: setup steps in order, check conditions in order with their exact reasons (the "on master" condition uses `c.OnMaster()` with reason `switch back to master first`), hints verbatim.
 - [ ] **Step 4: Run tests to verify they pass** — Run: `go test ./internal/game/ -run 'TestLevels'` — Expected: PASS for fresh, solve, wrong and deterministic subtests.
 - [ ] **Step 5: Commit** with the message given for the task.
 
@@ -460,8 +461,8 @@ Steps per task:
 ```go
 {n: 1, fresh: "there are no commits yet", solve: `git add logbook.txt && git commit -q -m "First entry"`},
 {n: 2, fresh: "there is no branch named explore", solve: `git switch -q -c explore`},
-{n: 3, fresh: "main does not point at the same commit as repairs yet", solve: `git merge -q --ff-only repairs`,
-    wrong: `git merge -q --no-ff --no-edit repairs`, wrongReason: "main got a merge commit; this merge can be a fast-forward"},
+{n: 3, fresh: "master does not point at the same commit as repairs yet", solve: `git merge -q --ff-only repairs`,
+    wrong: `git merge -q --no-ff --no-edit repairs`, wrongReason: "master got a merge commit; this merge can be a fast-forward"},
 ```
 Extra test in `l02_test.go`: after `git branch explore` only (no switch), the reason is `the explore branch exists, but you are not on it`.
 Commit: `git commit -m "feat(levels): add first commit, branch and fast-forward levels"`
@@ -469,7 +470,7 @@ Commit: `git commit -m "feat(levels): add first commit, branch and fast-forward 
 ### Task 7: Levels 4–5
 
 ```go
-{n: 4, fresh: "main is not a merge of both captains' orders yet",
+{n: 4, fresh: "master is not a merge of both captains' orders yet",
     solve: `git merge captain-b; printf 'Course: west, then east\n' > orders.txt && git add orders.txt && git commit -q --no-edit`},
 {n: 5, fresh: `the last commit still says "Send telgram"`, solve: `git commit -q --amend -m "Send telegram"`,
     wrong: `git commit -q --allow-empty -m "Send telegram"`, wrongReason: `the fixed commit should sit right on top of "Add the header"; amend instead of adding a commit`},
@@ -483,8 +484,8 @@ Commit: `git commit -m "feat(levels): add merge conflict and amend levels"`
 {n: 6, fresh: "nothing has been undone yet", solve: `git revert --no-edit HEAD~1`,
     wrong: `git reset -q --hard HEAD~2`, wrongReason: "history was rewritten, but the village already has those commits; run gitquest reset and try git revert"},
 {n: 7, fresh: "hotfix has no new commit yet",
-    solve: `git stash -q && git switch -q hotfix && echo fixed > bridge.txt && git add bridge.txt && git commit -q -m "Fix the bridge" && git switch -q main && git stash pop -q`,
-    wrong: `git stash -q && git switch -q hotfix && echo fixed > bridge.txt && git add bridge.txt && git commit -q -m "Fix the bridge" && git switch -q main`,
+    solve: `git stash -q && git switch -q hotfix && echo fixed > bridge.txt && git add bridge.txt && git commit -q -m "Fix the bridge" && git switch -q master && git stash pop -q`,
+    wrong: `git stash -q && git switch -q hotfix && echo fixed > bridge.txt && git add bridge.txt && git commit -q -m "Fix the bridge" && git switch -q master`,
     wrongReason: "your plan B draft is not back in notes.txt yet"},
 ```
 Extra test in `l07_test.go`: on the fresh level, `git switch hotfix` exits non-zero (proves the stash is needed).
@@ -495,16 +496,16 @@ Commit: `git commit -m "feat(levels): add revert and stash levels"`
 ```go
 {n: 8, fresh: "there is no branch named treasure", solve: `git branch treasure HEAD@{1}`,
     wrong: `git branch treasure`, wrongReason: "treasure exists, but it does not contain the lost map commit"},
-{n: 9, fresh: "main has no sourdough.txt yet", solve: `git cherry-pick experiments~1`,
-    wrong: `git merge -q --no-edit experiments`, wrongReason: "main got a merge commit; copy just the one commit instead"},
+{n: 9, fresh: "master has no sourdough.txt yet", solve: `git cherry-pick experiments~1`,
+    wrong: `git merge -q --no-edit experiments`, wrongReason: "master got a merge commit; copy just the one commit instead"},
 ```
 Commit: `git commit -m "feat(levels): add reflog rescue and cherry-pick levels"`
 
 ### Task 10: Levels 10–12
 
 ```go
-{n: 10, fresh: `campfire still contains the "Scout the trail" commit`, solve: `git rebase -q --onto main trail campfire`,
-    wrong: `git rebase -q main`, wrongReason: "campfire should have exactly 2 commits on top of main"},
+{n: 10, fresh: `campfire still contains the "Scout the trail" commit`, solve: `git rebase -q --onto master trail campfire`,
+    wrong: `git rebase -q master`, wrongReason: "campfire should have exactly 2 commits on top of master"},
 {n: 11, fresh: `there should be exactly one commit after "Write chapter 1"`,
     solve: `git reset -q --soft HEAD~2 && git commit -q -m "Write chapters 2 and 3"`,
     wrong: `git reset -q --hard HEAD~2 && git commit -q --allow-empty -m "Write chapters 2 and 3"`,

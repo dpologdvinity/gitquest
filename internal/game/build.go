@@ -31,7 +31,7 @@ func Build(root string, l levels.Level) (dir string, err error) {
 		return "", err
 	}
 	g := gitx.Git{Dir: dir, Env: gitx.SetupEnv(gitx.SetupEpoch)}
-	if _, err = g.Run("init", "-q", "-b", "main"); err != nil {
+	if _, err = g.Run("init", "-q", "-b", "master"); err != nil {
 		return "", err
 	}
 	f, e := os.OpenFile(filepath.Join(dir, ".git", "info", "exclude"), os.O_APPEND|os.O_WRONLY, 0644)

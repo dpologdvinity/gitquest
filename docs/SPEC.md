@@ -148,7 +148,8 @@ Missing file: empty progress. Unparseable: rename to `progress.json.corrupt-<uni
 - **Player config** written into every level repo by setup with `git config` (so the player's own global config cannot break a level): `user.name Adventurer`, `user.email adventurer@gitquest.invalid`, `commit.gpgsign false`, `tag.gpgsign false`, `merge.ff true`, `core.autocrlf false`, `core.hooksPath <level dir>/.git/gitquest-no-hooks` (a path that does not exist, so no hooks run).
 
 ### 6.2 Deterministic setup
-- `git init -q -b main` in the level dir.
+- `git init -q -b master` in the level dir.
+- Existing marked level repositories created before the default branch changed to `master` remain checkable on `main`; newly built levels use `master`.
 - A setup clock starts at `1767258000` (2026-01-01 09:00:00 UTC). Every setup git command runs with both dates set to the clock; each `Commit` step advances the clock by 60 s **after** committing.
 - Setup steps (data, applied in order):
 
@@ -164,7 +165,7 @@ Missing file: empty progress. Unparseable: rename to `progress.json.corrupt-<uni
 Build order (`game.Build`), exactly:
 1. `EnsureRoot`; fail if the level dir exists.
 2. `os.Mkdir(dir, 0755)`; write `.gitquest-level` with empty `refs`.
-3. `git init -q -b main`; append the line `.gitquest-level` to `.git/info/exclude` (so `git add -A` never picks it up).
+3. `git init -q -b master`; append the line `.gitquest-level` to `.git/info/exclude` (so `git add -A` never picks it up).
 4. Write the player config (§6.1) with `git config`.
 5. Apply the level's steps (§6.2 table).
 6. Rewrite `.gitquest-level` with the saved `refs`.
@@ -178,7 +179,7 @@ Building the same level twice gives identical commit IDs (tested).
 
 | Method | Git |
 |---|---|
-| `Head() string` | `symbolic-ref -q HEAD` (e.g. `refs/heads/main`; `""` if detached) |
+| `Head() string` | `symbolic-ref -q HEAD` (e.g. `refs/heads/master`; `""` if detached) |
 | `Rev(name) string` | `rev-parse -q --verify <name>^{commit}` (`""` if missing) |
 | `Has(rev, path) bool` | `rev-parse -q --verify <rev>:<path>` succeeds |
 | `Blob(rev, path) string` | `cat-file blob <rev>:<path>` |
@@ -266,39 +267,39 @@ type Level struct {
 }
 ```
 
-Every check first requires `c.Head() == "refs/heads/main"` (reason
-`switch back to main first`) unless stated. Conditions are tested in the order
+Every check first requires `c.Head() == "refs/heads/master"` (reason
+`switch back to master first`) unless stated. Conditions are tested in the order
 listed; the first failing one gives the reason. Text in this section is exact.
 
 ### Level 1 · The Empty Logbook
 - Story: `You are the new keeper of the gitquest lighthouse. The old keeper left a logbook on the desk, but nothing in it was ever saved.`
-- Goal: `Save logbook.txt in a commit on the main branch.`
+- Goal: `Save logbook.txt in a commit on the master branch.`
 - Setup: `Write logbook.txt "Day 1: the lamp is lit.\n"`.
-- Check: (1) `Rev("HEAD") != ""` else `there are no commits yet`; (2) on main; (3) `Has("HEAD","logbook.txt")` else `the latest commit does not contain logbook.txt`.
+- Check: (1) `Rev("HEAD") != ""` else `there are no commits yet`; (2) on master; (3) `Has("HEAD","logbook.txt")` else `the latest commit does not contain logbook.txt`.
 - Hints: `A commit is a saved snapshot. First tell git which files belong in it.` / `git add logbook.txt stages the file for the next commit.` / `git add logbook.txt && git commit -m "First entry"`
 - Solution: `git add logbook.txt`; `git commit -m "First entry"`.
 
 ### Level 2 · A Fork in the Path
-- Story: `Behind the lighthouse the path splits in two. You want to explore the new trail without scribbling on the main map.`
+- Story: `Behind the lighthouse the path splits in two. You want to explore the new trail without scribbling on the master map.`
 - Goal: `Create a branch named explore and switch to it.`
 - Setup: `Write map.txt "lighthouse\n"`, `Commit "Draw the map"`.
-- Check (no main requirement): (1) `Rev("refs/heads/explore") != ""` else `there is no branch named explore`; (2) `Head() == "refs/heads/explore"` else `the explore branch exists, but you are not on it`.
+- Check (no master requirement): (1) `Rev("refs/heads/explore") != ""` else `there is no branch named explore`; (2) `Head() == "refs/heads/explore"` else `the explore branch exists, but you are not on it`.
 - Hints: `Branches are movable name tags for commits.` / `git branch explore creates it; git switch explore moves you onto it.` / `git switch -c explore`
 - Solution: `git switch -c explore`.
 
 ### Level 3 · Catching Up
-- Story: `Your crew patched the raft on the repairs branch. The main branch still points at the old, leaky raft.`
-- Goal: `Bring main up to date with repairs without creating a merge commit.`
-- Setup: `Write raft.txt "logs\n"`, `Commit "Build the raft"`, `Branch repairs`, `Switch repairs`, `Write sail.txt "patched\n"`, `Commit "Patch the sail"`, `Write knots.txt "tight\n"`, `Commit "Tie the knots"`, `Save repairs repairs`, `Switch main`.
-- Check: (1) on main; (2) `len(Parents("main")) < 2` else `main got a merge commit; this merge can be a fast-forward`; (3) `Rev("main") == Ref("repairs")` else `main does not point at the same commit as repairs yet`.
-- Hints: `When main has no new commits of its own, a merge can just slide main forward.` / `Stay on main and merge the repairs branch.` / `git merge --ff-only repairs`
+- Story: `Your crew patched the raft on the repairs branch. The master branch still points at the old, leaky raft.`
+- Goal: `Bring master up to date with repairs without creating a merge commit.`
+- Setup: `Write raft.txt "logs\n"`, `Commit "Build the raft"`, `Branch repairs`, `Switch repairs`, `Write sail.txt "patched\n"`, `Commit "Patch the sail"`, `Write knots.txt "tight\n"`, `Commit "Tie the knots"`, `Save repairs repairs`, `Switch master`.
+- Check: (1) on master; (2) `len(Parents("master")) < 2` else `master got a merge commit; this merge can be a fast-forward`; (3) `Rev("master") == Ref("repairs")` else `master does not point at the same commit as repairs yet`.
+- Hints: `When master has no new commits of its own, a merge can just slide master forward.` / `Stay on master and merge the repairs branch.` / `git merge --ff-only repairs`
 - Solution: `git merge --ff-only repairs`. Wrong solution test: `git merge --no-ff --no-edit repairs` fails with reason (2).
 
 ### Level 4 · Two Captains
 - Story: `Two captains wrote different courses into orders.txt. The ship can only follow one set of orders, so you must merge them.`
-- Goal: `Merge captain-b into main. Resolve the conflict so orders.txt mentions both west and east, then finish the merge.`
-- Setup: `Write orders.txt "Course: north\n"`, `Commit "Agree on a course"`, `Branch captain-b`, `Write orders.txt "Course: west\n"`, `Commit "Captain A: sail west"`, `Save main main`, `Switch captain-b`, `Write orders.txt "Course: east\n"`, `Commit "Captain B: sail east"`, `Save b captain-b`, `Switch main`.
-- Check: (1) on main; (2) `!Merging()` else `the merge is still in progress: fix orders.txt, git add it, then git commit`; (3) `Parents("HEAD") == [Ref("main"), Ref("b")]` else `main is not a merge of both captains' orders yet`; (4) no line of `Blob("HEAD","orders.txt")` starts with `<<<<<<<`, `=======` or `>>>>>>>` else `orders.txt still has conflict markers in it`; (5) the blob, lowercased, contains `west` and `east` else `orders.txt should mention both west and east`.
+- Goal: `Merge captain-b into master. Resolve the conflict so orders.txt mentions both west and east, then finish the merge.`
+- Setup: `Write orders.txt "Course: north\n"`, `Commit "Agree on a course"`, `Branch captain-b`, `Write orders.txt "Course: west\n"`, `Commit "Captain A: sail west"`, `Save master master`, `Switch captain-b`, `Write orders.txt "Course: east\n"`, `Commit "Captain B: sail east"`, `Save b captain-b`, `Switch master`.
+- Check: (1) on master; (2) `!Merging()` else `the merge is still in progress: fix orders.txt, git add it, then git commit`; (3) `Parents("HEAD") == [Ref("master"), Ref("b")]` else `master is not a merge of both captains' orders yet`; (4) no line of `Blob("HEAD","orders.txt")` starts with `<<<<<<<`, `=======` or `>>>>>>>` else `orders.txt still has conflict markers in it`; (5) the blob, lowercased, contains `west` and `east` else `orders.txt should mention both west and east`.
 - Hints: `Start with git merge captain-b. Git stops and marks the conflict inside orders.txt.` / `Edit orders.txt: delete the <<<<<<<, ======= and >>>>>>> lines and write a course that has both west and east.` / `git merge captain-b, edit orders.txt, then git add orders.txt && git commit --no-edit`
 - Solution: `git merge captain-b` (exits 1), write `Course: west, then east\n`, `git add orders.txt`, `git commit --no-edit`.
 
@@ -306,7 +307,7 @@ listed; the first failing one gives the reason. Text in this section is exact.
 - Story: `You just sent a telegram to HQ, but the commit message has a typo. Nobody has seen it yet, so you can fix it in place.`
 - Goal: `Change the last commit's message to exactly "Send telegram" without adding a new commit.`
 - Setup: `Write header.txt "TO: HQ\n"`, `Commit "Add the header"`, `Save base HEAD`, `Write telegram.txt "ARRIVING TUESDAY STOP\n"`, `Commit "Send telgram"`, `Save typo HEAD`.
-- Check: (1) on main; (2) `Rev("HEAD") != Ref("typo")` else `the last commit still says "Send telgram"`; (3) `Parents("HEAD") == [Ref("base")]` else `the fixed commit should sit right on top of "Add the header"; amend instead of adding a commit`; (4) `Message("HEAD") == "Send telegram"` else `the message is "<msg>", not "Send telegram"`; (5) `Tree("HEAD") == Tree(Ref("typo"))` else `the files changed too; only the message should change`.
+- Check: (1) on master; (2) `Rev("HEAD") != Ref("typo")` else `the last commit still says "Send telgram"`; (3) `Parents("HEAD") == [Ref("base")]` else `the fixed commit should sit right on top of "Add the header"; amend instead of adding a commit`; (4) `Message("HEAD") == "Send telegram"` else `the message is "<msg>", not "Send telegram"`; (5) `Tree("HEAD") == Tree(Ref("typo"))` else `the files changed too; only the message should change`.
 - Hints: `You can rewrite the most recent commit as long as nobody else has it yet.` / `git commit --amend replaces the last commit with a new one.` / `git commit --amend -m "Send telegram"`
 - Solution: `git commit --amend -m "Send telegram"`. Wrong solution test: `git commit --allow-empty -m "Send telegram"` fails with reason (3).
 
@@ -314,47 +315,47 @@ listed; the first failing one gives the reason. Text in this section is exact.
 - Story: `Someone cast a growth spell on the village garden, and everyone already pulled it. You must undo it without rewriting shared history.`
 - Goal: `Undo the "Cast a growth spell" commit with a new commit, keeping every existing commit.`
 - Setup: `Write garden.txt "roses\n"`, `Commit "Plant the garden"`, `Write spell.txt "grow grow grow\n"`, `Commit "Cast a growth spell"`, `Write garden.txt "roses\nwatered\n"`, `Commit "Water the plants"`, `Save tip HEAD`.
-- Check: (1) on main; (2) `IsAncestor(Ref("tip"), "HEAD")` else `history was rewritten, but the village already has those commits; run gitquest reset and try git revert`; (3) `Rev("HEAD") != Ref("tip")` else `nothing has been undone yet`; (4) `!Has("HEAD","spell.txt")` else `spell.txt is still in the latest commit`; (5) `Blob("HEAD","garden.txt") == "roses\nwatered\n"` else `garden.txt lost its watering; undo only the spell`.
+- Check: (1) on master; (2) `IsAncestor(Ref("tip"), "HEAD")` else `history was rewritten, but the village already has those commits; run gitquest reset and try git revert`; (3) `Rev("HEAD") != Ref("tip")` else `nothing has been undone yet`; (4) `!Has("HEAD","spell.txt")` else `spell.txt is still in the latest commit`; (5) `Blob("HEAD","garden.txt") == "roses\nwatered\n"` else `garden.txt lost its watering; undo only the spell`.
 - Hints: `Shared history should not be rewritten. Add a commit that does the opposite instead.` / `git log --oneline shows the commit to undo; it is HEAD~1.` / `git revert --no-edit HEAD~1`
 - Solution: `git revert --no-edit HEAD~1`. Wrong solution test: `git reset --hard HEAD~2` fails with reason (2).
 
 ### Level 7 · Pocket Dimension
 - Story: `You were drafting plan B when a messenger burst in: the bridge is broken! Your draft is not ready to commit, and git will not let you switch to the hotfix branch with it lying around.`
-- Goal: `Put your draft aside, commit a file named bridge.txt on the hotfix branch, then return to main and bring your draft back (uncommitted).`
-- Setup: `Write notes.txt "plan A\n"`, `Commit "Write plan A"`, `Branch hotfix`, `Switch hotfix`, `Write notes.txt "plan A\nbridge: broken\n"`, `Commit "Report the broken bridge"`, `Save hotfix hotfix`, `Switch main`, `Save main main`, `Write notes.txt "plan A\nplan B (draft)\n"`.
-- Check (main requirement is condition 4): (1) `Rev("hotfix") != Ref("hotfix")` else `hotfix has no new commit yet`; (2) `IsAncestor(Ref("hotfix"), "hotfix")` else `the hotfix branch lost its earlier commit`; (3) `Has("hotfix","bridge.txt")` else `the newest hotfix commit has no bridge.txt`; (4) on main; (5) `Rev("main") == Ref("main")` else `main changed; your draft should stay uncommitted`; (6) `File("notes.txt") == "plan A\nplan B (draft)\n"` else `your plan B draft is not back in notes.txt yet`.
-- Hints: `git stash tucks uncommitted changes away and leaves a clean working tree.` / `Stash, switch to hotfix, add and commit bridge.txt, switch back to main, then bring the stash back.` / `git stash && git switch hotfix && echo fixed > bridge.txt && git add bridge.txt && git commit -m "Fix the bridge" && git switch main && git stash pop`
+- Goal: `Put your draft aside, commit a file named bridge.txt on the hotfix branch, then return to master and bring your draft back (uncommitted).`
+- Setup: `Write notes.txt "plan A\n"`, `Commit "Write plan A"`, `Branch hotfix`, `Switch hotfix`, `Write notes.txt "plan A\nbridge: broken\n"`, `Commit "Report the broken bridge"`, `Save hotfix hotfix`, `Switch master`, `Save master master`, `Write notes.txt "plan A\nplan B (draft)\n"`.
+- Check (master requirement is condition 4): (1) `Rev("hotfix") != Ref("hotfix")` else `hotfix has no new commit yet`; (2) `IsAncestor(Ref("hotfix"), "hotfix")` else `the hotfix branch lost its earlier commit`; (3) `Has("hotfix","bridge.txt")` else `the newest hotfix commit has no bridge.txt`; (4) on master; (5) `Rev("master") == Ref("master")` else `master changed; your draft should stay uncommitted`; (6) `File("notes.txt") == "plan A\nplan B (draft)\n"` else `your plan B draft is not back in notes.txt yet`.
+- Hints: `git stash tucks uncommitted changes away and leaves a clean working tree.` / `Stash, switch to hotfix, add and commit bridge.txt, switch back to master, then bring the stash back.` / `git stash && git switch hotfix && echo fixed > bridge.txt && git add bridge.txt && git commit -m "Fix the bridge" && git switch master && git stash pop`
 - Solution: exactly hint 3.
 
 ### Level 8 · The Lost Treasure Map
 - Story: `Last night you drew a treasure map, then panicked and ran git reset --hard. The commit looks gone, but git quietly remembers everywhere HEAD has been.`
 - Goal: `Find the lost commit and create a branch named treasure that points at it.`
 - Setup: `Write journal.txt "set sail\n"`, `Commit "Start the journal"`, `Write treasure-map.txt "X marks the spot\n"`, `Commit "Draw the treasure map"`, `Save lost HEAD`, `ResetHard HEAD~1`.
-- Check (no main requirement): (1) `Rev("refs/heads/treasure") != ""` else `there is no branch named treasure`; (2) `IsAncestor(Ref("lost"), "refs/heads/treasure")` else `treasure exists, but it does not contain the lost map commit`.
+- Check (no master requirement): (1) `Rev("refs/heads/treasure") != ""` else `there is no branch named treasure`; (2) `IsAncestor(Ref("lost"), "refs/heads/treasure")` else `treasure exists, but it does not contain the lost map commit`.
 - Hints: `git reflog lists every commit HEAD has pointed at, even after a reset.` / `Find "Draw the treasure map" in git reflog. HEAD@{1} is where HEAD was before the reset.` / `git branch treasure HEAD@{1}`
 - Solution: `git branch treasure HEAD@{1}`.
 
 ### Level 9 · Borrowed Recipe
 - Story: `The experiments branch has three new recipes. Only the sourdough is good enough for the bakery menu.`
-- Goal: `Copy only the "Perfect the sourdough" commit onto main.`
-- Setup: `Write menu.txt "bread\n"`, `Commit "Open the bakery"`, `Branch experiments`, `Switch experiments`, `Write glitter.txt "glitter frosting\n"`, `Commit "Try glitter frosting"`, `Write sourdough.txt "flour, water, salt, patience\n"`, `Commit "Perfect the sourdough"`, `Save sourdough HEAD`, `Write fishcake.txt "fish cake\n"`, `Commit "Try fish cake"`, `Switch main`, `Write sign.txt "OPEN\n"`, `Commit "Paint the sign"`, `Save main HEAD`.
-- Check: (1) on main; (2) `IsAncestor(Ref("main"), "main")` else `main lost its own commits`; (3) `Count("--min-parents=2", Ref("main")+"..main") == 0` else `main got a merge commit; copy just the one commit instead`; (4) `Has("main","sourdough.txt")` and its blob equals `Blob(Ref("sourdough"),"sourdough.txt")` else `main has no sourdough.txt yet`; (5) neither `glitter.txt` nor `fishcake.txt` in `main` else `main picked up recipes it should not have`.
+- Goal: `Copy only the "Perfect the sourdough" commit onto master.`
+- Setup: `Write menu.txt "bread\n"`, `Commit "Open the bakery"`, `Branch experiments`, `Switch experiments`, `Write glitter.txt "glitter frosting\n"`, `Commit "Try glitter frosting"`, `Write sourdough.txt "flour, water, salt, patience\n"`, `Commit "Perfect the sourdough"`, `Save sourdough HEAD`, `Write fishcake.txt "fish cake\n"`, `Commit "Try fish cake"`, `Switch master`, `Write sign.txt "OPEN\n"`, `Commit "Paint the sign"`, `Save master HEAD`.
+- Check: (1) on master; (2) `IsAncestor(Ref("master"), "master")` else `master lost its own commits`; (3) `Count("--min-parents=2", Ref("master")+"..master") == 0` else `master got a merge commit; copy just the one commit instead`; (4) `Has("master","sourdough.txt")` and its blob equals `Blob(Ref("sourdough"),"sourdough.txt")` else `master has no sourdough.txt yet`; (5) neither `glitter.txt` nor `fishcake.txt` in `master` else `master picked up recipes it should not have`.
 - Hints: `git cherry-pick copies a single commit onto the branch you are on.` / `git log --oneline experiments shows the sourdough commit; it is experiments~1.` / `git cherry-pick experiments~1`
 - Solution: `git cherry-pick experiments~1`. Wrong solution test: `git merge --no-edit experiments` fails with reason (3).
 
 ### Level 10 · Moving Camp
-- Story: `You built the campfire on top of the scouting trail, but the trail was a dead end. The campfire belongs right on main.`
-- Goal: `Move the two campfire commits so they sit directly on top of main, without the trail commit. Leave main itself alone.`
-- Setup: `Write camp.txt "base camp\n"`, `Commit "Set up base camp"`, `Branch trail`, `Switch trail`, `Write trail.txt "dead end\n"`, `Commit "Scout the trail"`, `Save trail HEAD`, `Branch campfire`, `Switch campfire`, `Write fire.txt "kindling\n"`, `Commit "Build the campfire"`, `Write fire.txt "kindling\nmarshmallows\n"`, `Commit "Roast marshmallows"`, `Switch main`, `Write tent.txt "pitched\n"`, `Commit "Pitch the tent"`, `Save main HEAD`, `Switch campfire`.
-- Check (no main requirement): (1) `Rev("main") == Ref("main")` else `main moved; leave main where it is (gitquest reset starts over)`; (2) `Rev("campfire") != ""` else `the campfire branch is missing`; (3) `!IsAncestor(Ref("trail"), "campfire")` else `campfire still contains the "Scout the trail" commit`; (4) `IsAncestor(Ref("main"), "campfire")` else `campfire does not sit on top of main yet`; (5) `Count("main..campfire") == 2` else `campfire should have exactly 2 commits on top of main`; (6) `Blob("campfire","fire.txt") == "kindling\nmarshmallows\n"` and `!Has("campfire","trail.txt")` else `campfire's files are not right: fire.txt needs both lines and trail.txt must be gone`.
-- Hints: `git rebase --onto <new-base> <old-base> <branch> replays only the commits after <old-base>.` / `The new base is main, the old base is trail, and the branch is campfire.` / `git rebase --onto main trail campfire`
-- Solution: `git rebase --onto main trail campfire`. Wrong solution test: `git rebase main` (on campfire) replays the trail commit too and fails with reason (5).
+- Story: `You built the campfire on top of the scouting trail, but the trail was a dead end. The campfire belongs right on master.`
+- Goal: `Move the two campfire commits so they sit directly on top of master, without the trail commit. Leave master itself alone.`
+- Setup: `Write camp.txt "base camp\n"`, `Commit "Set up base camp"`, `Branch trail`, `Switch trail`, `Write trail.txt "dead end\n"`, `Commit "Scout the trail"`, `Save trail HEAD`, `Branch campfire`, `Switch campfire`, `Write fire.txt "kindling\n"`, `Commit "Build the campfire"`, `Write fire.txt "kindling\nmarshmallows\n"`, `Commit "Roast marshmallows"`, `Switch master`, `Write tent.txt "pitched\n"`, `Commit "Pitch the tent"`, `Save master HEAD`, `Switch campfire`.
+- Check (no master requirement): (1) `Rev("master") == Ref("master")` else `master moved; leave master where it is (gitquest reset starts over)`; (2) `Rev("campfire") != ""` else `the campfire branch is missing`; (3) `!IsAncestor(Ref("trail"), "campfire")` else `campfire still contains the "Scout the trail" commit`; (4) `IsAncestor(Ref("master"), "campfire")` else `campfire does not sit on top of master yet`; (5) `Count("master..campfire") == 2` else `campfire should have exactly 2 commits on top of master`; (6) `Blob("campfire","fire.txt") == "kindling\nmarshmallows\n"` and `!Has("campfire","trail.txt")` else `campfire's files are not right: fire.txt needs both lines and trail.txt must be gone`.
+- Hints: `git rebase --onto <new-base> <old-base> <branch> replays only the commits after <old-base>.` / `The new base is master, the old base is trail, and the branch is campfire.` / `git rebase --onto master trail campfire`
+- Solution: `git rebase --onto master trail campfire`. Wrong solution test: `git rebase master` (on campfire) replays the trail commit too and fails with reason (5).
 
 ### Level 11 · Two Kinds of Forgetting
 - Story: `You wrote chapters 2 and 3 as two messy draft commits. Squash them into one commit, but do not lose the edit to chapter 1 that you have not committed yet.`
 - Goal: `Replace the two draft commits with one commit named exactly "Write chapters 2 and 3". Keep your uncommitted edit in ch1.txt: do not commit it and do not lose it.`
 - Setup: `Write ch1.txt "Chapter 1\n"`, `Commit "Write chapter 1"`, `Save ch1 HEAD`, `Write ch2.txt "Chapter 2\n"`, `Commit "Draft chapter 2"`, `Write ch3.txt "Chapter 3\n"`, `Commit "Draft chapter 3"`, `Save drafts HEAD`, `Write ch1.txt "Chapter 1\nedit: keep me\n"`.
-- Check: (1) `File("ch1.txt") == "Chapter 1\nedit: keep me\n"` else `your uncommitted edit to ch1.txt is gone (git reset --hard throws working changes away); run gitquest reset and try --soft`; (2) on main; (3) `Parents("HEAD") == [Ref("ch1")]` else `there should be exactly one commit after "Write chapter 1"`; (4) `Message("HEAD") == "Write chapters 2 and 3"` else `the commit message is "<msg>"`; (5) `Tree("HEAD") == Tree(Ref("drafts"))` else `the new commit should hold ch2.txt and ch3.txt, and the original ch1.txt`.
+- Check: (1) `File("ch1.txt") == "Chapter 1\nedit: keep me\n"` else `your uncommitted edit to ch1.txt is gone (git reset --hard throws working changes away); run gitquest reset and try --soft`; (2) on master; (3) `Parents("HEAD") == [Ref("ch1")]` else `there should be exactly one commit after "Write chapter 1"`; (4) `Message("HEAD") == "Write chapters 2 and 3"` else `the commit message is "<msg>"`; (5) `Tree("HEAD") == Tree(Ref("drafts"))` else `the new commit should hold ch2.txt and ch3.txt, and the original ch1.txt`.
 - Hints: `git reset --soft moves the branch back but keeps the changes staged. git reset --hard throws changes away, even uncommitted ones.` / `git reset --soft HEAD~2 un-commits both drafts and keeps them staged.` / `git reset --soft HEAD~2 && git commit -m "Write chapters 2 and 3" (no -a, so ch1.txt stays uncommitted)`
 - Solution: `git reset --soft HEAD~2`; `git commit -m "Write chapters 2 and 3"`. Wrong solution test: `git reset --hard HEAD~2` then the same commit fails with reason (1).
 
@@ -362,7 +363,7 @@ listed; the first failing one gives the reason. Text in this section is exact.
 - Story: `The attic is full of junk: logs, a cache folder and a file full of passwords. Only your notes belong in the repository.`
 - Goal: `Commit a .gitignore that ignores debug.log, the cache/ folder and secrets.env, and commit notes.md. None of the junk may be committed.`
 - Setup: `Write attic.txt "dusty\n"`, `Commit "Open the attic"`, `Write debug.log "noise\n"`, `Write cache/a.tmp "tmp\n"`, `Write secrets.env "PASSWORD=swordfish\n"`, `Write notes.md "# Notes\n"`.
-- Check: (1) on main; (2) `Has("HEAD",".gitignore")` else `there is no committed .gitignore yet`; (3) for `p` in `debug.log`, `cache/a.tmp`, `secrets.env`: `!Has("HEAD",p)` else `<p> was committed; remove it with git rm --cached <p> and commit again`; (4) `Has("HEAD","notes.md")` else `notes.md is not committed yet`; (5) for the same three `p`: `Ignored(p)` else `<p> is not ignored by your .gitignore`; (6) `!Ignored("notes.md")` else `notes.md is ignored too, but it should be committed`.
+- Check: (1) on master; (2) `Has("HEAD",".gitignore")` else `there is no committed .gitignore yet`; (3) for `p` in `debug.log`, `cache/a.tmp`, `secrets.env`: `!Has("HEAD",p)` else `<p> was committed; remove it with git rm --cached <p> and commit again`; (4) `Has("HEAD","notes.md")` else `notes.md is not committed yet`; (5) for the same three `p`: `Ignored(p)` else `<p> is not ignored by your .gitignore`; (6) `!Ignored("notes.md")` else `notes.md is ignored too, but it should be committed`.
 - Hints: `A .gitignore file lists patterns for files git should leave alone.` / `The patterns *.log, cache/ and secrets.env match the junk.` / `printf '*.log\ncache/\nsecrets.env\n' > .gitignore && git add .gitignore notes.md && git commit -m "Ignore the junk"`
 - Solution: exactly hint 3 (with a real newline-producing `printf`).
 
