@@ -11,7 +11,7 @@ You need Git 2.32 or newer. Install with Go:
 go install github.com/dpologdvinity/gitquest@latest
 ```
 
-Tagged releases will provide archives for Linux and macOS (amd64 and arm64) on the project's GitHub Releases page. Extract the `gitquest` executable and put it on your `PATH`.
+Tagged releases provide pre-compiled archives for Linux and macOS (amd64 and arm64) on the project's GitHub Releases page. Extract the `gitquest` executable and place it on your `PATH`.
 
 ## How to play
 
@@ -58,6 +58,16 @@ Next: gitquest level 2
 | 11 | Two Kinds of Forgetting | Soft and hard reset |
 | 12 | Secrets in the Attic | `.gitignore` |
 
+## Architecture Overview
+
+`gitquest` is built purely with the Go standard library and the host system's `git` binary (version 2.32+).
+- **`internal/gitx`**: Manages child process execution with sanitized environments, isolating author metadata, dates, and configuration paths.
+- **`internal/game`**: Enforces strict directory isolation using `.gitquest-root` and `.gitquest-level` sentinels, guarantees atomic progress tracking in `progress.json`, and coordinates deterministic level builds.
+- **`internal/levels`**: Contains level specifications and deterministic step definitions. Verifications inspect Git plumbing (`rev-parse`, `symbolic-ref`, `cat-file`, `merge-base`) without parsing porcelain output.
+- **`internal/cli`**: Wires command dispatch, player progress reporting, and user hints.
+
+For comprehensive architectural design and technical details, see [ARCHITECTURE.md](ARCHITECTURE.md).
+
 ## Safety and locations
 
 Level repositories live under `~/gitquest` by default. Set `GITQUEST_ROOT` to an absolute path to put them elsewhere. Gitquest marks its root with `.gitquest-root` and every level with `.gitquest-level`. It refuses to use an existing nonempty folder without the root marker or reset a level without its matching marker. `gitquest reset` deletes and rebuilds a marked level, including any work you made there.
@@ -65,6 +75,25 @@ Level repositories live under `~/gitquest` by default. Set `GITQUEST_ROOT` to an
 Progress is stored in `$GITQUEST_HOME/progress.json` when `GITQUEST_HOME` is set, otherwise under `$XDG_STATE_HOME/gitquest` or `~/.local/state/gitquest`.
 
 Each level repository has its own Git identity (`Adventurer <adventurer@gitquest.invalid>`) and disables hooks. Gitquest does not touch repositories outside its game root.
+
+## Development & Contributing
+
+To develop, test, or build `gitquest` locally:
+
+```bash
+git clone https://github.com/dpologdvinity/gitquest.git
+cd gitquest
+
+# Run full test suite
+go test -v ./...
+
+# Run static analysis and linters
+test -z "$(gofmt -l .)"
+go vet ./...
+golangci-lint run ./...
+```
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for full guidelines on coding standards, tests, and pull request conventions.
 
 ## License
 
