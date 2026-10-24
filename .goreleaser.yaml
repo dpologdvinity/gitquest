@@ -8,8 +8,28 @@ builds:
 archives:
   - formats: [tar.gz]
     files: [LICENSE, README.md]
+nfpms:
+  - file_name_template: "{{ .ProjectName }}_linux_{{ .Arch }}"
+    homepage: "https://github.com/dpologdvinity/gitquest"
+    maintainer: "Kaitlyn Bassford <dpologdvinity@users.noreply.github.com>"
+    description: "Learn git by escaping puzzle rooms"
+    license: MIT
+    section: games
+    formats: [deb]
+    dependencies:
+      - git (>= 1:2.32)
+    contents:
+      - src: LICENSE
+        dst: /usr/share/doc/gitquest/copyright
+      - src: README.md
+        dst: /usr/share/doc/gitquest/README.md
+release:
+  extra_files:
+    - glob: install.sh
 checksum:
   name_template: checksums.txt
+  extra_files:
+    - glob: install.sh
 homebrew_casks:
   - repository:
       owner: dpologdvinity
