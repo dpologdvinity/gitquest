@@ -11,7 +11,7 @@ You need Git 2.32 or newer. Install with Go:
 go install github.com/dpologdvinity/gitquest@latest
 ```
 
-Release archives for Linux and macOS (amd64 and arm64) are available from the project's GitHub Releases page. Extract the `gitquest` executable and put it on your `PATH`.
+Tagged releases will provide archives for Linux and macOS (amd64 and arm64) on the project's GitHub Releases page. Extract the `gitquest` executable and put it on your `PATH`.
 
 ## How to play
 
