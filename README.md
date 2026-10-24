@@ -1,6 +1,13 @@
 gitquest: learn git by escaping puzzle rooms
 ============================================
 
+[![CI](https://github.com/dpologdvinity/gitquest/actions/workflows/ci.yml/badge.svg?branch=master)](https://github.com/dpologdvinity/gitquest/actions/workflows/ci.yml)
+[![Release workflow](https://github.com/dpologdvinity/gitquest/actions/workflows/release.yml/badge.svg)](https://github.com/dpologdvinity/gitquest/actions/workflows/release.yml)
+[![Latest release](https://img.shields.io/github/v/release/dpologdvinity/gitquest)](https://github.com/dpologdvinity/gitquest/releases/latest)
+[![Go version](https://img.shields.io/github/go-mod/go-version/dpologdvinity/gitquest?branch=master)](go.mod)
+[![License](https://img.shields.io/github/license/dpologdvinity/gitquest)](LICENSE)
+[![Downloads](https://img.shields.io/github/downloads/dpologdvinity/gitquest/total)](https://github.com/dpologdvinity/gitquest/releases)
+
 `gitquest` is a 12-level escape-room game played with real Git repositories. Each room starts with a small story and a Git puzzle. Use Git in your shell, then ask `gitquest` to check your solution.
 
 ## Install
@@ -15,11 +22,13 @@ brew install dpologdvinity/tap/gitquest
 go install github.com/dpologdvinity/gitquest@latest
 ```
 
-Tagged releases provide pre-compiled archives for Linux and macOS (amd64 and arm64) on the project's GitHub Releases page. Extract the `gitquest` executable and place it on your `PATH`.
+Tagged releases provide pre-compiled archives for Linux and macOS (amd64 and arm64) on the project's [GitHub Releases page](https://github.com/dpologdvinity/gitquest/releases/latest). Extract the `gitquest` executable and place it on your `PATH`.
 
 ## How to play
 
 Run `gitquest start`, change into the level folder it prints, solve the puzzle with normal `git` commands, then run `gitquest check`. Use `gitquest hint` for up to three progressive hints. `gitquest status` lists all rooms, `gitquest level N` opens any room, and `gitquest reset [N]` rebuilds a room from scratch.
+
+Release `v0.1.0` uses `main` for puzzle branches. This walkthrough follows current source on `master`; install it with `go install github.com/dpologdvinity/gitquest@master` to use `master` in the examples.
 
 Here is a level 1 session:
 
@@ -78,13 +87,13 @@ Level repositories live under `~/gitquest` by default. Set `GITQUEST_ROOT` to an
 
 New level repositories start on `master`. Existing marked levels created before this change continue to work on `main`; rename that branch with `git branch -m main master` to use the updated hints.
 
-Progress is stored in `$GITQUEST_HOME/progress.json` when `GITQUEST_HOME` is set, otherwise under `$XDG_STATE_HOME/gitquest` or `~/.local/state/gitquest`.
+Progress is stored in `$GITQUEST_HOME/progress.json` when `GITQUEST_HOME` is set, otherwise under `$XDG_STATE_HOME/gitquest` when `XDG_STATE_HOME` is absolute, or `~/.local/state/gitquest`.
 
 Each level repository has its own Git identity (`Adventurer <adventurer@gitquest.invalid>`) and disables hooks. Gitquest does not touch repositories outside its game root.
 
 ## Development & Contributing
 
-To develop, test, or build `gitquest` locally:
+Use Go 1.26 or newer to develop, test, or build `gitquest` locally:
 
 ```bash
 git clone https://github.com/dpologdvinity/gitquest.git
