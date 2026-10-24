@@ -1,17 +1,118 @@
 name: CI
-on: [push, pull_request]
+
+on:
+  push:
+    branches: [master, main]
+  pull_request:
+    branches: [master, main]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
+  deps:
+    name: Validate Environment & Dependencies
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7.0.1
+      - name: Setup Go
+        uses: actions/setup-go@v7.0.0
+        with:
+          go-version-file: go.mod
+          cache: true
+      - name: Verify Go & Git Environment
+        run: |
+          go version
+          git --version
+      - name: Verify Dependencies
+        run: |
+          go mod verify
+          go mod download
+
+  lint:
+    name: Format, Linters & Static Analysis
+    needs: deps
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7.0.1
+      - name: Setup Go
+        uses: actions/setup-go@v7.0.0
+        with:
+          go-version-file: go.mod
+          cache: true
+      - name: Verify Code Formatting
+        run: test -z "$(gofmt -l .)"
+      - name: Static Analysis (go vet)
+        run: go vet ./...
+      - name: Run golangci-lint
+        uses: golangci/golangci-lint-action@v6
+        with:
+          version: v2.15.0
+          args: --timeout=5m
+
   test:
+    name: Test Suite (${{ matrix.os }})
+    needs: deps
     strategy:
+      fail-fast: true
       matrix:
         os: [ubuntu-latest, macos-latest]
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-go@v7
+      - name: Checkout
+        uses: actions/checkout@v7.0.1
+      - name: Setup Go
+        uses: actions/setup-go@v7.0.0
         with:
           go-version-file: go.mod
-      - run: git --version
-      - run: test -z "$(gofmt -l .)"
-      - run: go vet ./...
-      - run: go test ./...
+          cache: true
+      - name: Git Version Check
+        run: git --version
+      - name: Run Tests (Linux with Race & Coverage)
+        if: runner.os == 'Linux'
+        run: |
+          go test -v -race -coverprofile=coverage.out -covermode=atomic ./...
+          go tool cover -func=coverage.out
+      - name: Run Tests (macOS)
+        if: runner.os == 'macOS'
+        run: go test -v ./...
+      - name: Upload Coverage Report
+        if: runner.os == 'Linux'
+        uses: actions/upload-artifact@v4
+        with:
+          name: code-coverage-report
+          path: coverage.out
+          retention-days: 14
+
+  build:
+    name: Build Production Artifacts
+    needs: [lint, test]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7.0.1
+        with:
+          fetch-depth: 0
+      - name: Setup Go
+        uses: actions/setup-go@v7.0.0
+        with:
+          go-version-file: go.mod
+          cache: true
+      - name: Build Snapshot Binaries with GoReleaser
+        uses: goreleaser/goreleaser-action@v7.3.0
+        with:
+          version: "~> v2"
+          args: build --snapshot --clean
+      - name: Smoke Test Built Binary
+        run: |
+          ./dist/gitquest_linux_amd64_v1/gitquest --version
+          ./dist/gitquest_linux_amd64_v1/gitquest --help
+      - name: Upload Snapshot Binaries
+        uses: actions/upload-artifact@v4
+        with:
+          name: snapshot-binaries
+          path: dist/
+          retention-days: 7
