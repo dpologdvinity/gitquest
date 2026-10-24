@@ -129,7 +129,7 @@ func (c *Ctx) Tree(rev string) string { return strings.TrimSpace(c.run("rev-pars
 func (c *Ctx) Count(args ...string) int {
 	out := strings.TrimSpace(c.run(append([]string{"rev-list", "--count"}, args...)...))
 	var n int
-	fmt.Sscan(out, &n)
+	_, _ = fmt.Sscan(out, &n)
 	return n
 }
 func (c *Ctx) IsAncestor(a, b string) bool { return c.ok("merge-base", "--is-ancestor", a, b) }
