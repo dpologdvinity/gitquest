@@ -44,7 +44,7 @@ func LevelDir(root string, n int) string { return filepath.Join(root, fmt.Sprint
 func EnsureRoot(root string) error {
 	info, err := os.Lstat(root)
 	if errors.Is(err, os.ErrNotExist) {
-		if err = os.MkdirAll(root, 0755); err != nil {
+		if err = os.Mkdir(root, 0755); err != nil {
 			return err
 		}
 		return os.WriteFile(filepath.Join(root, RootMarker), []byte(RootMarkerContent), 0644)

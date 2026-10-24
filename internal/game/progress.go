@@ -41,9 +41,25 @@ func LoadProgress(dir string, now time.Time) (*Progress, string, error) {
 		return nil, "", err
 	}
 	p := freshProgress()
-	if err = json.Unmarshal(b, p); err != nil {
+	err = json.Unmarshal(b, p)
+	if err == nil {
+		if p.Version != 1 || p.Current < 0 || p.Current > 12 {
+			err = errors.New("invalid progress values")
+		} else {
+			for _, state := range p.Levels {
+				if state == nil || state.Hints < 0 || state.Hints > 3 {
+					err = errors.New("invalid progress values")
+					break
+				}
+			}
+		}
+	}
+	if err != nil {
 		moved := fmt.Sprintf("%s.corrupt-%d", path, now.Unix())
-		if e := os.Rename(path, moved); e != nil {
+		if e := os.Link(path, moved); e != nil {
+			return nil, "", e
+		}
+		if e := os.Remove(path); e != nil {
 			return nil, "", e
 		}
 		return freshProgress(), moved, nil

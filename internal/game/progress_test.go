@@ -52,3 +52,39 @@ func TestCurrentLevelFromSubdirAndSymlink(t *testing.T) {
 		t.Fatal(n)
 	}
 }
+func TestLoadProgressQuarantinesInvalidValues(t *testing.T) {
+	for name, raw := range map[string]string{"current": `{"version":1,"current":99,"levels":{}}`, "hints": `{"version":1,"current":1,"levels":{"1":{"hints":-1}}}`} {
+		t.Run(name, func(t *testing.T) {
+			dir := t.TempDir()
+			path := filepath.Join(dir, "progress.json")
+			if e := os.WriteFile(path, []byte(raw), 0600); e != nil {
+				t.Fatal(e)
+			}
+			p, moved, e := LoadProgress(dir, t0)
+			if e != nil || p == nil || p.Current != 0 || moved == "" {
+				t.Fatal(p, moved, e)
+			}
+			b, e := os.ReadFile(moved)
+			if e != nil || string(b) != raw {
+				t.Fatal("original progress not preserved", e)
+			}
+		})
+	}
+}
+func TestCorruptBackupIsNotOverwritten(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "progress.json")
+	backup := fmt.Sprintf("%s.corrupt-%d", path, t0.Unix())
+	os.WriteFile(backup, []byte("older backup"), 0600)
+	os.WriteFile(path, []byte("{{"), 0600)
+	_, _, err := LoadProgress(dir, t0)
+	if err == nil {
+		t.Fatal("expected backup collision error")
+	}
+	if b, _ := os.ReadFile(backup); string(b) != "older backup" {
+		t.Fatal("older backup overwritten")
+	}
+	if b, _ := os.ReadFile(path); string(b) != "{{" {
+		t.Fatal("current corrupt file lost")
+	}
+}

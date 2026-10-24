@@ -98,3 +98,14 @@ func TestSafeRemoveRefusals(t *testing.T) {
 		t.Fatal("must refuse")
 	}
 }
+func TestEnsureRootDoesNotCreateParents(t *testing.T) {
+	base := t.TempDir()
+	parent := filepath.Join(base, "unrequested")
+	root := filepath.Join(parent, "gq")
+	if e := EnsureRoot(root); e == nil {
+		t.Fatal("created an unrequested parent")
+	}
+	if _, e := os.Lstat(parent); !os.IsNotExist(e) {
+		t.Fatal("created parent outside game root")
+	}
+}
