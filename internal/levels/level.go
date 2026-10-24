@@ -99,12 +99,12 @@ type Ctx struct {
 
 func (c *Ctx) run(args ...string) string {
 	g := gitx.Git{Dir: c.Dir, Env: gitx.CheckEnv()}
-	out, _ := g.Run(append([]string{"-c", "core.excludesFile=/dev/null"}, args...)...)
+	out, _ := g.Run(append([]string{"-c", "core.excludesFile=" + os.DevNull}, args...)...)
 	return out
 }
 func (c *Ctx) ok(args ...string) bool {
 	g := gitx.Git{Dir: c.Dir, Env: gitx.CheckEnv()}
-	ok, _ := g.Ok(append([]string{"-c", "core.excludesFile=/dev/null"}, args...)...)
+	ok, _ := g.Ok(append([]string{"-c", "core.excludesFile=" + os.DevNull}, args...)...)
 	return ok
 }
 func (c *Ctx) Head() string { return strings.TrimSpace(c.run("symbolic-ref", "-q", "HEAD")) }

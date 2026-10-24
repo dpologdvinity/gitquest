@@ -26,7 +26,7 @@ func baseEnv() []string {
 			env = append(env, v)
 		}
 	}
-	return append(env, "GIT_CONFIG_NOSYSTEM=1", "GIT_CONFIG_GLOBAL=/dev/null", "LC_ALL=C")
+	return append(env, "GIT_CONFIG_NOSYSTEM=1", "GIT_CONFIG_GLOBAL="+os.DevNull, "LC_ALL=C")
 }
 func SetupEnv(unix int64) []string {
 	date := fmt.Sprintf("@%d +0000", unix)

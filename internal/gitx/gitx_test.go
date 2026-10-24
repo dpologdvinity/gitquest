@@ -1,6 +1,7 @@
 package gitx
 
 import (
+	"os"
 	"strings"
 	"testing"
 )
@@ -9,7 +10,7 @@ func TestEnvsDropUserGitVars(t *testing.T) {
 	t.Setenv("GIT_DIR", "/evil")
 	t.Setenv("GIT_AUTHOR_NAME", "Me")
 	env := strings.Join(SetupEnv(SetupEpoch+60), "\n")
-	for _, w := range []string{"GIT_CONFIG_NOSYSTEM=1", "GIT_CONFIG_GLOBAL=/dev/null", "GIT_AUTHOR_NAME=Gitquest Narrator", "GIT_COMMITTER_EMAIL=narrator@gitquest.invalid", "GIT_AUTHOR_DATE=@1767258060 +0000", "GIT_COMMITTER_DATE=@1767258060 +0000", "LC_ALL=C", "TZ=UTC"} {
+	for _, w := range []string{"GIT_CONFIG_NOSYSTEM=1", "GIT_CONFIG_GLOBAL=" + os.DevNull, "GIT_AUTHOR_NAME=Gitquest Narrator", "GIT_COMMITTER_EMAIL=narrator@gitquest.invalid", "GIT_AUTHOR_DATE=@1767258060 +0000", "GIT_COMMITTER_DATE=@1767258060 +0000", "LC_ALL=C", "TZ=UTC"} {
 		if !strings.Contains(env, w) {
 			t.Errorf("missing %s", w)
 		}

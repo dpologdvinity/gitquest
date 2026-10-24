@@ -15,7 +15,7 @@ brew install dpologdvinity/tap/gitquest
 go install github.com/dpologdvinity/gitquest@latest
 ```
 
-Tagged releases provide pre-compiled archives for Linux and macOS (amd64 and arm64) on the project's GitHub Releases page. Extract the `gitquest` executable and place it on your `PATH`.
+Tagged releases provide pre-compiled archives for Linux, macOS, and Windows (amd64 and arm64) on the project's GitHub Releases page. Extract the `gitquest` executable and place it on your `PATH`.
 
 ## How to play
 

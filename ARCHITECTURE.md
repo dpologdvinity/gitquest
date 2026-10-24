@@ -10,7 +10,7 @@
 |---|---|---|
 | **Language** | Go (`go 1.26+`) | Standard library only; zero third-party dependencies |
 | **VCS Engine** | Git (>= 2.32) | Invoked via child process with sanitized environments |
-| **Packaging & Release** | GoReleaser v2 | Cross-compiled static binaries for Linux and macOS (`amd64`/`arm64`) with `CGO_ENABLED=0` |
+| **Packaging & Release** | GoReleaser v2 | Cross-compiled static binaries for Linux, macOS, and Windows (`amd64`/`arm64`) with `CGO_ENABLED=0` |
 | **CI/CD** | GitHub Actions | Multi-stage pipeline: Dependency validation, linting, matrix testing with coverage, and artifact builds |
 
 ---
