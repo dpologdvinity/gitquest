@@ -5,9 +5,13 @@ gitquest: learn git by escaping puzzle rooms
 
 ## Install
 
-You need Git 2.32 or newer. Install with Go:
+You need Git 2.32 or newer.
 
 ```sh
+# Via Homebrew (Linux and macOS)
+brew install dpologdvinity/tap/gitquest
+
+# Or install with Go
 go install github.com/dpologdvinity/gitquest@latest
 ```
 

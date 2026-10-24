@@ -10,3 +10,13 @@ archives:
     files: [LICENSE, README.md]
 checksum:
   name_template: checksums.txt
+homebrew_casks:
+  - repository:
+      owner: dpologdvinity
+      name: homebrew-tap
+      branch: master
+      token: "{{ .Env.HOMEBREW_TAP_GITHUB_TOKEN }}"
+    directory: Casks
+    homepage: "https://github.com/dpologdvinity/gitquest"
+    description: "Learn git by escaping puzzle rooms"
+    license: "MIT"
