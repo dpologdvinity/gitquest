@@ -28,10 +28,10 @@ The installer detects amd64 or arm64, verifies the archive's SHA-256 checksum, a
 Download the package for your architecture, verify its checksum, then install it with APT:
 
 ```sh
-gitquest_arch=$(dpkg --print-architecture)
-curl -fLO "https://github.com/dpologdvinity/gitquest/releases/latest/download/gitquest_linux_${gitquest_arch}.deb"
-curl -fLO https://github.com/dpologdvinity/gitquest/releases/latest/download/checksums.txt
-sha256sum --ignore-missing --check checksums.txt
+gitquest_arch=$(dpkg --print-architecture) &&
+curl -fLO "https://github.com/dpologdvinity/gitquest/releases/latest/download/gitquest_linux_${gitquest_arch}.deb" &&
+curl -fLO https://github.com/dpologdvinity/gitquest/releases/latest/download/checksums.txt &&
+sha256sum --ignore-missing --check checksums.txt &&
 sudo apt install "./gitquest_linux_${gitquest_arch}.deb"
 ```
 

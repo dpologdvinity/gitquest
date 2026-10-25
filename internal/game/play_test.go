@@ -69,6 +69,32 @@ func TestLevels(t *testing.T) {
 		}
 	}
 }
+
+func TestMissingPuzzleObjectsRemainUnsolved(t *testing.T) {
+	for _, tc := range []struct {
+		n              int
+		script, reason string
+	}{
+		{6, `git rm -q spell.txt garden.txt && git commit -q -m "Undo spell"`, "garden.txt lost its watering; undo only the spell"},
+		{7, `git branch -D hotfix`, "the hotfix branch lost its earlier commit"},
+		{3, `git update-ref -d refs/heads/master`, "master does not point at the same commit as repairs yet"},
+	} {
+		t.Run(fmt.Sprint(tc.n), func(t *testing.T) {
+			t.Setenv("HOME", t.TempDir())
+			root := filepath.Join(t.TempDir(), "gq")
+			l, _ := levels.ByN(tc.n)
+			dir, err := Build(root, l)
+			if err != nil {
+				t.Fatal(err)
+			}
+			sh(t, dir, tc.script)
+			ok, reason, err := Check(root, l)
+			if err != nil || ok || reason != tc.reason {
+				t.Fatal(ok, reason, err)
+			}
+		})
+	}
+}
 func TestLevelsDeterministic(t *testing.T) {
 	for _, p := range plays {
 		t.Run(fmt.Sprint(p.n), func(t *testing.T) {

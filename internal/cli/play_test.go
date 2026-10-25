@@ -24,6 +24,20 @@ func TestStartFirstLevel(t *testing.T) {
 		t.Fatalf("got\n%s\nwant\n%s", out, want)
 	}
 }
+
+func TestCheckReportsBrokenGitConfig(t *testing.T) {
+	d, home, out, errb := testDeps(t)
+	if Run([]string{"start"}, d) != 0 {
+		t.Fatal(errb)
+	}
+	if err := os.WriteFile(filepath.Join(home, "gq", "level-01", ".git", "config"), []byte("[broken\n"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	out.Reset()
+	if code := Run([]string{"check"}, d); code != 1 || out.Len() != 0 || !strings.Contains(errb.String(), "bad config line") {
+		t.Fatalf("code=%d stdout=%q stderr=%q", code, out.String(), errb.String())
+	}
+}
 func TestLevelTwiceKeepsWork(t *testing.T) {
 	d, home, out, _ := testDeps(t)
 	Run([]string{"level", "3"}, d)
