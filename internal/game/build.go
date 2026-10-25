@@ -80,6 +80,10 @@ func Check(root string, l levels.Level) (bool, string, error) {
 	if m.Level != l.N {
 		return false, "", &RefuseError{dir, fmt.Sprintf("its marker is for level %d", m.Level)}
 	}
-	ok, reason := l.Check(&levels.Ctx{Dir: dir, Refs: m.Refs})
+	ctx := &levels.Ctx{Dir: dir, Refs: m.Refs}
+	ok, reason := l.Check(ctx)
+	if ctx.Err != nil {
+		return false, "", ctx.Err
+	}
 	return ok, reason, nil
 }

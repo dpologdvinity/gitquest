@@ -23,3 +23,18 @@ func TestCommittedJunkFails(t *testing.T) {
 		t.Fatal(ok, reason, e)
 	}
 }
+
+func TestBlanketIgnoreFails(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	root := filepath.Join(t.TempDir(), "gq")
+	l, _ := levels.ByN(12)
+	dir, err := Build(root, l)
+	if err != nil {
+		t.Fatal(err)
+	}
+	sh(t, dir, `printf '*\n' > .gitignore && git add -f .gitignore notes.md && git commit -q -m "Ignore everything"`)
+	ok, reason, err := Check(root, l)
+	if err != nil || ok || reason != "notes.md is ignored too, but it should be committed" {
+		t.Fatal(ok, reason, err)
+	}
+}

@@ -1,9 +1,11 @@
 package levels
 
 import (
+	"errors"
 	"fmt"
 	"github.com/dpologdvinity/gitquest/internal/gitx"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"sort"
 	"strings"
@@ -95,25 +97,50 @@ func ApplySteps(dir string, steps []Step) (map[string]string, error) {
 type Ctx struct {
 	Dir  string
 	Refs map[string]string
+	Err  error
 }
 
-func (c *Ctx) run(args ...string) string {
+func (c *Ctx) command(args ...string) (string, bool) {
+	if c.Err != nil {
+		return "", false
+	}
 	g := gitx.Git{Dir: c.Dir, Env: gitx.CheckEnv()}
-	out, _ := g.Run(append([]string{"-c", "core.excludesFile=" + os.DevNull}, args...)...)
+	out, err := g.Run(append([]string{"-c", "core.excludesFile=" + os.DevNull}, args...)...)
+	if err != nil {
+		var exit *exec.ExitError
+		if errors.As(err, &exit) && exit.ExitCode() == 1 {
+			switch args[0] {
+			case "rev-parse", "symbolic-ref", "show-ref", "merge-base", "check-ignore":
+				return "", false
+			}
+		}
+		c.Err = err
+	}
+	return out, err == nil
+}
+func (c *Ctx) run(args ...string) string {
+	out, _ := c.command(args...)
 	return out
 }
 func (c *Ctx) ok(args ...string) bool {
-	g := gitx.Git{Dir: c.Dir, Env: gitx.CheckEnv()}
-	ok, _ := g.Ok(append([]string{"-c", "core.excludesFile=" + os.DevNull}, args...)...)
+	_, ok := c.command(args...)
 	return ok
 }
 func (c *Ctx) Head() string { return strings.TrimSpace(c.run("symbolic-ref", "-q", "HEAD")) }
 func (c *Ctx) Rev(name string) string {
 	return strings.TrimSpace(c.run("rev-parse", "-q", "--verify", name+"^{commit}"))
 }
-func (c *Ctx) Has(rev, path string) bool    { return c.ok("rev-parse", "-q", "--verify", rev+":"+path) }
-func (c *Ctx) Blob(rev, path string) string { return c.run("cat-file", "blob", rev+":"+path) }
+func (c *Ctx) Has(rev, path string) bool { return c.ok("rev-parse", "-q", "--verify", rev+":"+path) }
+func (c *Ctx) Blob(rev, path string) string {
+	if !c.Has(rev, path) {
+		return ""
+	}
+	return c.run("cat-file", "blob", rev+":"+path)
+}
 func (c *Ctx) Parents(rev string) []string {
+	if c.Rev(rev) == "" {
+		return nil
+	}
 	fields := strings.Fields(c.run("rev-list", "--parents", "-n", "1", rev))
 	if len(fields) > 0 {
 		return fields[1:]
@@ -121,20 +148,33 @@ func (c *Ctx) Parents(rev string) []string {
 	return nil
 }
 func (c *Ctx) Message(rev string) string {
+	if c.Rev(rev) == "" {
+		return ""
+	}
 	out := c.run("cat-file", "commit", rev)
 	_, msg, _ := strings.Cut(out, "\n\n")
 	return strings.TrimSpace(msg)
 }
-func (c *Ctx) Tree(rev string) string { return strings.TrimSpace(c.run("rev-parse", rev+"^{tree}")) }
+func (c *Ctx) Tree(rev string) string {
+	if c.Rev(rev) == "" {
+		return ""
+	}
+	return strings.TrimSpace(c.run("rev-parse", rev+"^{tree}"))
+}
 func (c *Ctx) Count(args ...string) int {
 	out := strings.TrimSpace(c.run(append([]string{"rev-list", "--count"}, args...)...))
 	var n int
 	_, _ = fmt.Sscan(out, &n)
 	return n
 }
-func (c *Ctx) IsAncestor(a, b string) bool { return c.ok("merge-base", "--is-ancestor", a, b) }
-func (c *Ctx) Ignored(path string) bool    { return c.ok("check-ignore", "-q", path) }
-func (c *Ctx) Merging() bool               { return c.ok("rev-parse", "-q", "--verify", "MERGE_HEAD") }
+func (c *Ctx) IsAncestor(a, b string) bool {
+	if c.Rev(a) == "" || c.Rev(b) == "" {
+		return false
+	}
+	return c.ok("merge-base", "--is-ancestor", a, b)
+}
+func (c *Ctx) Ignored(path string) bool { return c.ok("check-ignore", "--no-index", "-q", path) }
+func (c *Ctx) Merging() bool            { return c.ok("rev-parse", "-q", "--verify", "MERGE_HEAD") }
 func (c *Ctx) File(path string) (string, bool) {
 	b, e := os.ReadFile(filepath.Join(c.Dir, path))
 	return string(b), e == nil
