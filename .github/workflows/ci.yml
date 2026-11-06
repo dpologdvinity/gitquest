@@ -63,6 +63,9 @@ jobs:
       matrix:
         os: [ubuntu-latest, macos-latest]
     runs-on: ${{ matrix.os }}
+    permissions:
+      contents: read
+      id-token: write # Codecov authenticates the upload via OIDC, so no CODECOV_TOKEN secret is needed
     steps:
       - name: Checkout
         uses: actions/checkout@v7.0.1
@@ -88,6 +91,13 @@ jobs:
           name: code-coverage-report
           path: coverage.out
           retention-days: 14
+      - name: Upload Coverage to Codecov
+        if: runner.os == 'Linux'
+        uses: codecov/codecov-action@v7.1.1
+        with:
+          files: coverage.out
+          use_oidc: true
+          fail_ci_if_error: false # a Codecov outage should not block merges
 
   build:
     name: Build Production Artifacts

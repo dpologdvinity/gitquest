@@ -2,6 +2,7 @@ gitquest: learn git by escaping puzzle rooms
 ============================================
 
 [![CI](https://github.com/dpologdvinity/gitquest/actions/workflows/ci.yml/badge.svg?branch=master)](https://github.com/dpologdvinity/gitquest/actions/workflows/ci.yml)
+[![Coverage](https://codecov.io/gh/dpologdvinity/gitquest/graph/badge.svg)](https://codecov.io/gh/dpologdvinity/gitquest)
 [![Release workflow](https://github.com/dpologdvinity/gitquest/actions/workflows/release.yml/badge.svg)](https://github.com/dpologdvinity/gitquest/actions/workflows/release.yml)
 [![Latest release](https://img.shields.io/github/v/release/dpologdvinity/gitquest)](https://github.com/dpologdvinity/gitquest/releases/latest)
 [![Go version](https://img.shields.io/github/go-mod/go-version/dpologdvinity/gitquest?branch=master)](go.mod)
