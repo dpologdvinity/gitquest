@@ -134,7 +134,7 @@ type LevelState struct {
     Hints    int       `json:"hints"`     // 0..3
 }
 ```
-Missing file: empty progress. Unparseable: rename to `progress.json.corrupt-<unix>` and start empty, with the stderr note `gitquest: progress file was unreadable; moved it to <path> and started fresh`.
+Missing file: empty progress. Unparsable: rename to `progress.json.corrupt-<unix>` and start empty, with the stderr note `gitquest: progress file was unreadable; moved it to <path> and started fresh`.
 
 ### 5.5 Current level
 1. If the working directory (after `EvalSymlinks`) is `<root>/level-NN` or inside it (root also resolved), the current level is `NN`.

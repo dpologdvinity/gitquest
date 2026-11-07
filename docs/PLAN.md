@@ -149,7 +149,7 @@ Expected: FAIL (build error: `undefined: SetupEnv`)
 
 - [ ] **Step 3: Implement per SPEC §6.1 and the version rule in §6.3**
 
-`VersionOK` returns `ErrGitVersion` if git is missing, unparseable, or below (2, 32).
+`VersionOK` returns `ErrGitVersion` if git is missing, unparsable, or below (2, 32).
 
 - [ ] **Step 4: Run tests to verify they pass**
 
@@ -245,7 +245,7 @@ Expected: FAIL (build error: `undefined: Root`)
 
 - [ ] **Step 3: Implement per SPEC §5.1–5.3**
 
-`SafeRemove` checks in this order: root marker (else `RootError`), `Lstat` symlink → `it is a symlink`, not a dir → `it has no .gitquest-level marker`, parent mismatch after `EvalSymlinks` → `it is outside the game root`, marker missing/unparseable/`game != "gitquest"` → `it has no .gitquest-level marker`, level mismatch → `its marker is for level <M>`. A missing level dir is not an error (returns nil).
+`SafeRemove` checks in this order: root marker (else `RootError`), `Lstat` symlink → `it is a symlink`, not a dir → `it has no .gitquest-level marker`, parent mismatch after `EvalSymlinks` → `it is outside the game root`, marker missing/unparsable/`game != "gitquest"` → `it has no .gitquest-level marker`, level mismatch → `its marker is for level <M>`. A missing level dir is not an error (returns nil).
 
 - [ ] **Step 4: Run tests to verify they pass**
 
