@@ -29,7 +29,12 @@ go build -o gitquest .
 # Verify the CLI responds
 ./gitquest --version
 ./gitquest --help
+
+# Install the pre-commit hooks (gitleaks, gofmt, golangci-lint, typos)
+lefthook install
 ```
+
+Coding agents: see [AGENTS.md](AGENTS.md).
 
 ---
 
