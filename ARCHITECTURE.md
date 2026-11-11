@@ -39,10 +39,12 @@ gitquest/
 │   └── gitx/                     # Git execution engine and environment sandboxing
 │       ├── gitx.go               # Git runner, SetupEnv, CheckEnv, ParseVersion, VersionOK
 │       └── gitx_test.go          # Environment sanitization and git runner tests
-├── docs/
-│   ├── SPEC.md                   # Source of truth specification (v0.1)
-│   ├── PLAN.md                   # Original step-by-step implementation plan
-│   └── agents/                   # Agent and owner ledgers (git-ignored)
+├── docs/agents/
+│   ├── specs/                    # Design specs (v0.1 spec is the behavior source of truth)
+│   └── plans/                    # Implementation plans written from the specs
+├── AGENTS.md                     # Instructions for coding agents (CLAUDE.md imports it)
+├── .claude/settings.json         # Shared Claude Code plugins
+├── .codex/config.toml            # Shared Codex plugins
 ├── .github/workflows/            # GitHub Actions CI & Release automation
 ├── .goreleaser.yaml              # Release configuration
 ├── .golangci.yml                 # Linter configuration (v2 format)

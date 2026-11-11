@@ -2,7 +2,7 @@
 
 Thank you for contributing to `gitquest`! This document details the local development setup, coding standards, and pull request workflow.
 
-For architectural decisions and internal layout, refer to [ARCHITECTURE.md](ARCHITECTURE.md). For detailed product specifications, refer to [docs/SPEC.md](docs/SPEC.md).
+For architectural decisions and internal layout, refer to [ARCHITECTURE.md](ARCHITECTURE.md). For detailed product specifications, refer to [docs/agents/specs/2026-10-23-gitquest-v0.1-design.md](docs/agents/specs/2026-10-23-gitquest-v0.1-design.md).
 
 ---
 
