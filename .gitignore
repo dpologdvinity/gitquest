@@ -2,3 +2,9 @@
 dist/
 .env
 .superpowers/
+/gitquest
+coverage.out
+.env.*
+!.env.example
+*.local.*
+CLAUDE.local.md
