@@ -78,15 +78,8 @@ jobs:
         run: git --version
       - name: Run Tests (Linux with Race & Coverage)
         if: runner.os == 'Linux'
-        # -coverpkg credits the level code exercised by internal/game tests, but
-        # -coverprofile would then list every block once per test package, which
-        # Codecov reads as partial lines. Writing raw counters and merging them
-        # with covdata gives one entry per block.
         run: |
-          covdir="$RUNNER_TEMP/gocover"
-          mkdir -p "$covdir"
-          go test -v -race -cover -covermode=atomic -coverpkg=./... ./... -args -test.gocoverdir="$covdir"
-          go tool covdata textfmt -i="$covdir" -o coverage.out
+          go test -v -race -coverpkg=./... -coverprofile=coverage.out -covermode=atomic ./...
           go tool cover -func=coverage.out
       - name: Run Tests (macOS)
         if: runner.os == 'macOS'
