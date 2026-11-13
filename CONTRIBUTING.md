@@ -44,7 +44,7 @@ Coding agents: see [AGENTS.md](AGENTS.md).
 |---|---|
 | Run all tests | `go test -v ./...` |
 | Run tests with race detection | `go test -race ./...` |
-| Generate test coverage | `go test -coverprofile=coverage.out ./... && go tool cover -func=coverage.out` |
+| Generate test coverage (counted across packages, as in CI) | `go test -coverpkg=./... -coverprofile=coverage.out ./... && go tool cover -func=coverage.out` |
 | Format codebase | `test -z "$(gofmt -l .)"` (or fix with `gofmt -w .`) |
 | Static analysis | `go vet ./...` |
 | Linter suite | `golangci-lint run ./...` |
